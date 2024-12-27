@@ -5,7 +5,7 @@
     "minimumHEVersion": "2.4.0.143",
     "dateReleased": "2025-01-01",
     "documentationLink": "https://github.com/KurtSanders/Hubitat-SmartLife-Integration?tab=readme-ov-file#hubitat-smartlife-device-integration",
-    "licenseFile": "https://github.com/KurtSanders/Hubitat-SmartLife-Integration?tab=MIT-1-ov-file#readme",
+    "licenseFile": "https://raw.githubusercontent.com/KurtSanders/Hubitat-SmartLife-Integration/refs/heads/main/LICENSE",
     "releaseNotes": "• Integrates SmartLife (Tuya) Heated Towel Warmer Device from Dywarmic (https://www.dywarmic.com/) to Hubitat./n/n• This integration utilizes an API tuya devices exposes on the local network, i.e. not via the tuya servers, to control and read status from devices.\n\n• This driver supports both 3.1-3.4 versions of the protocol.\n\n• This device driver requires one to create a Tuya Developer account and obtain device authenticaion creditials.\n\n• Instructions are available on Hubitat Community.",
     "drivers": [
         {
