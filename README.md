@@ -3,12 +3,12 @@
 ### Version 1.0.0 (Jan 1, 2025) 
 
 ### Features:
-<img src="http://raw.githubusercontent.com/KurtSanders/Hubitat-Tuya/refs/heads/main/Images/Dywarmic%20Warmer%20Top%20Down.jpg" width="300" height="300" />
+<img src="http://raw.githubusercontent.com/KurtSanders/Hubitat-Smart-Life/refs/heads/main/Images/Dywarmic%20Warmer%20Top%20Down.jpg" width="300" height="300" />
 
 * Integrates with Tuya Heated Towel Rack Compatible Devices.
 	* [Dywarmic Smart Towel Warmer](https://www.dywarmic.com/)  
 		* US Amazon Link<a href="https://www.amazon.com/Dywarmic-Smart-Towel-Warmer-Coolbreeze/dp/B0D9Y8DSMS" target="_blank">
-  <img src="http://raw.githubusercontent.com/KurtSanders/Hubitat-Tuya/refs/heads/main/Images/amazon-link-logo.jpg" width="30" height="25" />
+  <img src="http://raw.githubusercontent.com/KurtSanders/Hubitat-Smart-Life/refs/heads/main/Images/amazon-link-logo.jpg" width="30" height="25" />
  </a>
 * Hubitat local access on Home Network
 
