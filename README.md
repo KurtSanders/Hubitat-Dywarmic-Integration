@@ -8,9 +8,7 @@
 
 * Integrates a Smart Life (Tuya) Heated Towel Rack Compatible Devices.
 	* [Dywarmic Smart Towel Warmer Website](https://www.dywarmic.com/)
-	* [Amazon US](https://www.amazon.com/Dywarmic-Smart-Towel-Warmer-Coolbreeze/dp/B0D9Y8DSMS  target=_blank) <a href="https://www.amazon.com/Dywarmic-Smart-Towel-Warmer-Coolbreeze/dp/B0D9Y8DSMS  target=_blank">
-  <img src="http://raw.githubusercontent.com/KurtSanders/Hubitat-Smart-Life/refs/heads/main/Images/amazon-link-logo.jpg" width="30" height="25" />
- </a>
+	* [Amazon US](https://www.amazon.com/Dywarmic-Smart-Towel-Warmer-Coolbreeze/dp/B0D9Y8DSMS  target=_blank) <a href="https://www.amazon.com/Dywarmic-Smart-Towel-Warmer-Coolbreeze/dp/B0D9Y8DSMS  target=_blank"> <img src="http://raw.githubusercontent.com/KurtSanders/Hubitat-Smart-Life/refs/heads/main/Images/amazon-link-logo.jpg" width="30" height="25" /> </a>
 * Hubitat local access on Home Network
 * On/Off
 * Set Delay
