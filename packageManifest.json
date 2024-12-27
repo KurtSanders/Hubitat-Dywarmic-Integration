@@ -1,0 +1,30 @@
+{
+    "packageName": "Smart Life (Tuya) Heated Towel Rack Device Driver",
+    "author": "Kurt Sanders",
+    "version": "1.0.0",
+    "minimumHEVersion": "2.4.0.143",
+    "dateReleased": "2025-01-01",
+    "documentationLink": "https://github.com/KurtSanders/Hubitat-Smart-Life?tab=readme-ov-file#hubitat-tuya-drivers",
+    "licenseFile": "https://github.com/KurtSanders/Hubitat-Smart-Life?tab=MIT-1-ov-file#readme",
+    "releaseNotes": "Integrates a Smart Life (Tuya) Heated Towel Rack compatible devices (eg. Dynamic).",
+    "drivers": [
+        {
+            "id": "8dcc3473-367c-4eee-a89e-47d22af054c5",
+            "name": "Hubitat Smart Life Parent",
+            "namespace": "kurtsanders",
+            "location": "https://raw.githubusercontent.com/KurtSanders/Hubitat-Smart-Life/refs/heads/main/Drivers/tuya%20Local%20Towel%20Warmer.groovy",
+            "required": true,
+            "primary": true,
+            "oauth": true
+        },
+        {
+            "id": "a7fca180-d0ce-4b8a-a61e-c7a297a7cff8",
+            "name": "Component Generic Towel Rack Device",
+            "namespace": "kurtsanders",
+            "location": "https://raw.githubusercontent.com/KurtSanders/Hubitat-Smart-Life/refs/heads/main/Drivers/Component%20Generic%20Towel%20Rack%20Device.groovy",
+            "required": true,
+            "primary": true,
+            "oauth": true
+        }
+    ]
+}
