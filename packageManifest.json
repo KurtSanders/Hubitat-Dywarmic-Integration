@@ -16,15 +16,6 @@
             "required": true,
             "primary": true,
             "oauth": false
-        },
-        {
-            "id": "a7fca180-d0ce-4b8a-a61e-c7a297a7cff8",
-            "name": "Towel Warmer Component Device",
-            "namespace": "kurtsanders",
-            "location": "https://raw.githubusercontent.com/KurtSanders/Hubitat-SmartLife-Integration/refs/heads/main/Drivers/Towel%20Warmer%20Component%20Device.groovy",
-            "required": true,
-            "primary": true,
-            "oauth": false
         }
     ]
 }
