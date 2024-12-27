@@ -1,6 +1,5 @@
 import groovy.transform.Field
 import java.text.SimpleDateFormat
-import groovy.time.TimeCategory
 
 @Field static final List COUNTDOWNLIST = ["1h","2h","3h","4h","5h","6h","cancel"]
 @Field static final List THERMO_STAT_OPERATING_STATE = ["heating", "idle", "off"]
@@ -9,9 +8,8 @@ import groovy.time.TimeCategory
 @Field static final List CODES = ["light","child_lock","eco"]
 @Field static final Map POLLING_INT = ['01':'01 Mins','02':'02 Mins','03':'03 Mins','04':'04 Mins','05':'05 Mins','10':'10 Mins','30':'30 Mins','0':'No Polling']
 
-
 metadata {
-    definition(name: 'Component Generic Towel Rack Device', namespace: 'component', author: 'Jonathan Bradshaw') {
+    definition(name: 'Towel Warmer Component Device', namespace: 'kurtsanders', author: 'Kurt Sanders') {
         capability 'Actuator'
         capability 'Switch'
         capability 'TemperatureMeasurement'

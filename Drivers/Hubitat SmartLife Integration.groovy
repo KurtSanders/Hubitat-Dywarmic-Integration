@@ -1,73 +1,82 @@
 /**
-*
-* Original RGBW Code by Ivar Holand
-* Towel Warmer Tuya Device modifications/integrations to Hubitat by Kurt Sanders(c) 2024-2025
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Reference: https://raw.githubusercontent.com/ivarho/hubitatappndevice/master/Device/tuyaDevices/tuyaGenericBulbRGBW.groovy
+ * Based from Tuya Integration by Ivar Holand
+ *
+ * Hubitat SmartLife Integration by Kurt Sanders 2024-2025
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import groovy.transform.Field
 import java.text.SimpleDateFormat
 import groovy.json.*
 
-    metadata {
-        definition(name: "tuya Local Towel Warmer",
-                   namespace: "kurtsanders",
-                   author: "Kurt Sanders",
-                   importUrl: "",
-                   singleThreaded: true) {
-            capability "Actuator"
-            capability "Switch"
-            capability 'TemperatureMeasurement'
-            capability 'Refresh'
+metadata {
+	definition(name: "Hubitat SmartLife Integration",
+			namespace: "kurtsanders",
+			author: "Kurt Sanders",
+//			importUrl: "https://raw.githubusercontent.com/ivarho/hubitatappndevice/master/Device/tuyaDevices/tuyaGenericBulbRGBW.groovy",
+			singleThreaded: true) {
+		capability "Actuator"
+		capability "Switch"
+        capability 'TemperatureMeasurement'
+        capability 'ThermostatHeatingSetpoint'
+        capability 'Refresh'
+        capability "PresenceSensor"
 
-            attribute "countdown_left", "number"
-            attribute "light", "string"
-            attribute "child_lock", "string"
-            attribute "mode", "string"
-            attribute "level", "string"
-            attribute "eco", "string"
-            attribute "temp_unit_convert", "string"
-            attribute "error", "string"
-            attribute "state", "string"
-            attribute "polling", "boolean"
+        attribute "countdown_left", "number"
+        attribute "countdown_set", "string"
+        attribute "light", "string"
+        attribute "child_lock", "string"
+        attribute "fault", "string"
+        attribute "temp_set", "string"
+        attribute "temp_set_f", "string"
+        attribute "mode", "string"
+        attribute "level", "string"
+        attribute "eco", "string"
+        attribute "temp_unit_convert", "string"
+        attribute "temp_current_f", "number"
+        attribute "temp_current", "number"
+        attribute "error", "string"
+        attribute "state", "string"
+        attribute "polling", "boolean"
+		attribute "rawMessage", "String"
 
-            command "Disconnect"
-            command "SendCustomJSONObject", [[name:"jsonPayload*", type: "STRING", description:"Format: {\"1\":true, \"12\":\"cancel\"}"]]
-            command "SendCustomDataToDevice", [[name:"endpoint*", type:"NUMBER", description:"To which endpint(dps) do you want the data to be sent"], [name:"data*", type:"STRING", description:"the data to be sent, treated as string, but true and false is converted"]]
-            command "setCountdownTimer", [[name: "Count Down Timer Units (mins)*", type:"ENUM", description:"Sets the Count Down Timer [mins]", constraints:SPA_COUNTDOWNTIMERLIST]]
-            command "setFeature", [
-                [name: "Feature*", type:"ENUM", description:"Feature", constraints:FEATURES],
-                [name: "Value*", type:"ENUM", description:"Value", constraints:ONOFF],
-            ]
-        }
-    }
-@Field static final Map SPA_COUNTDOWNTIMERLIST           = ["1h":'20',"2h":'40',"3h":'60',"4h":'80',"5h":'100',"6h":'120',"cancel":"cancel"]
-@Field static final Integer DELTA_TEMPERATURE            = 5
-@Field static final List ONOFF                           = ["on", "off"]
-@Field static final Map FEATURES                         = ["8":"light","7":"child_lock","6":"eco"]
+        attribute "supportedThermostatFanModes", 'JSON_OBJECT'
+        attribute "supportedThermostatModes", 'JSON_OBJECT'
+        attribute "thermostatFanMode", "enum", THERMO_STAT_FAN_MODES
+        attribute "thermostatOperatingState", "enum",  THERMO_STAT_OPERATING_STATE
+        attribute "thermostatMode", "enum", THERMO_STAT_MODES
+
+		command "status"
+		command "SendCustomDataToDevice", [[name:"endpoint*", type:"NUMBER", description:"To which endpint(dps) do you want the data to be sent"], [name:"data*", type:"STRING", description:"the data to be sent, treated as string, but true and false is converted"]]
+		command "Disconnect"
+		command "SendCustomJSONObject", [[name:"jsonPayload*", type: "STRING", description:"Format: {\"1\":true, \"12\":\"cancel\"}"]]
+        command "setCountDown", [[name: "Count Down Timer Units*", type:"ENUM", description:"Sets the Count Down Timer [in device dependent increments]", constraints:COUNTDOWNLIST]]
+	}
+}
 
 preferences {
-    section("tuya Towel Warmer Device Config") {
-        input "ipaddress", "text", title: "Device IP:", required: true, description: "<small>tuya device local IP address. Found by using tools like tinytuya. Tip: configure a fixed IP address for your tuya device on your network to make sure the IP does not change over time.</small>"
-        input "devId", "text", title: "Device ID:", required: true, description: "<small>Unique tuya device ID. Found by using tools like tinytuya.</small>"
-        input "localKey", "text", title: "Device local key:", required: true, description: "<small>The local key used  for encrypted communication between HE and the tuya Deivce. Found by using tools like tinytuya.</small>"
-        input name: "logEnable", type: "bool", title: "Enable <u>debug</u> logging", defaultValue: true, description: "<small>If issues are experienced it might help to turn on debug logging and see the debug logs, automatically turned off after 30 min. Check device IP, ID and local key make sure they are correct. Also a power off/on on the tuya device might help.</small>"
-        input name: "logTrace", type: "bool", title: "Enable driver level <u>trace</u> logging", defaultValue: true, description: "<small>For trace level debugging, it could be helpful to follow the program flow to make sure the correct functions are called. (Auto disabled after 30 min)</small>"
-        input "tuyaProtVersion", "enum", title: "Select tuya protocol version: ", required: true, defaultValue: 34, options: [31: "3.1", 33 : "3.3", 34: "3.4"], description: "<small>Select the correct protocol version corresponding to your device. If you run firmware update on the device you should expect the driver protocol version to update. Which protocol is used can be found using tools like tinytuya.</small>"
-        input name: "poll_interval", type: "enum", title: "Configure poll interval:", defaultValue: 0, options: [0: "No polling", 1:"Every 1 second", 2:"Every 2 second", 3: "Every 3 second", 5: "Every 5 second", 10: "Every 10 second", 15: "Every 15 second", 20: "Every 20 second", 30: "Every 30 second", 60: "Every 1 min", 120: "Every 2 min", 180: "Every 3 min"], description: "<small>Old way of reading status of the deivce. Use \"No polling\" when auto reconnect or heart beat is enabled.</small>"
-        input name: "autoReconnect", type: "bool", title: "Auto reconnect on socket close", defaultValue: true, description: "<small>A communication channel is kept open between HE and the tuya device. Every 30 s the socket is closed and re-opened. This is useful if the device is a switch, or is also being controlled from external apps like Smart Life etc. For <b>3.4</b> it is also smart to enable the Use heart beat method to reduce data traffic.</small>"
-        input name: "heartBeatMethod", type: "bool", title: "Use heart beat method to keep connection alive", defaultValue: true, description: "<small>Use a heart beat to keep the connection alive, i.e. a message is sent every 20 seconds to the device, the causes less data traffic on <b>3.4</b> devices as sessions don't have to be negotiated all the time.</small>"
-    }
+	section("tuya Towel Warmer Device Config") {
+		input "ipaddress", "text", title: "Device IP:", required: true, description: "<small>tuya device local IP address. Found by using tools like tinytuya. Tip: configure a fixed IP address for your tuya device on your network to make sure the IP does not change over time.</small>"
+		input "devId", "text", title: "Device ID:", required: true, description: "<small>Unique tuya device ID. Found by using tools like tinytuya.</small>"
+		input "localKey", "text", title: "Device local key:", required: true, description: "<small>The local key used  for encrypted communication between HE and the tuya Deivce. Found by using tools like tinytuya.</small>"
+		input name: "logEnable", type: "bool", title: "Enable <u>debug</u> logging", defaultValue: true, description: "<small>If issues are experienced it might help to turn on debug logging and see the debug logs, automatically turned off after 30 min. Check device IP, ID and local key make sure they are correct. Also a power off/on on the tuya device might help.</small>"
+		input name: "logTrace", type: "bool", title: "Enable driver level <u>trace</u> logging", defaultValue: true, description: "<small>For debugging scenes and automations it could be helpful to follow the program flow to make sure the correct functions are called. (Auto disabled after 30 min)</small>"
+		input "tuyaProtVersion", "enum", title: "Select tuya protocol version: ", required: true, defaultValue: 34, options: [31: "3.1", 33 : "3.3", 34: "3.4"], description: "<small>Select the correct protocol version corresponding to your device. If you run firmware update on the device you should expect the driver protocol version to update. Which protocol is used can be found using tools like tinytuya.</small>"
+		input name: "poll_interval", type: "enum", title: "Configure poll interval:", defaultValue: 0, options: [0: "No polling", 1:"Every 1 second", 2:"Every 2 second", 3: "Every 3 second", 5: "Every 5 second", 10: "Every 10 second", 15: "Every 15 second", 20: "Every 20 second", 30: "Every 30 second", 60: "Every 1 min", 120: "Every 2 min", 180: "Every 3 min"], description: "<small>Old way of reading status of the deivce. Use \"No polling\" when auto reconnect or heart beat is enabled.</small>"
+		input name: "autoReconnect", type: "bool", title: "Auto reconnect on socket close", defaultValue: true, description: "<small>A communication channel is kept open between HE and the tuya device. Every 30 s the socket is closed and re-opened. This is useful if the device is a switch, or is also being controlled from external apps like Smart Life etc. For <b>3.4</b> it is also smart to enable the Use heart beat method to reduce data traffic.</small>"
+		input name: "heartBeatMethod", type: "bool", title: "Use heart beat method to keep connection alive", defaultValue: true, description: "<small>Use a heart beat to keep the connection alive, i.e. a message is sent every 20 seconds to the device, the causes less data traffic on <b>3.4</b> devices as sessions don't have to be negotiated all the time.</small>"
+	}
 }
 
 void logsOff() {
@@ -77,40 +86,49 @@ void logsOff() {
 }
 
 void installed() {
-	device.updateSetting("logEnable", [value: "true", type: "bool"])
-	device.updateSetting("logTrace", [value: "false", type: "bool"])
-    state.units = location.temperatureScale
+    String stmJSON = new groovy.json.JsonBuilder(THERMO_STAT_MODES).toString()
+    sendEvent(name: "supportedThermostatModes", value: stmJSON, displayed: false, isStateChange: true)
+    stmJSON = new groovy.json.JsonBuilder(THERMO_STAT_FAN_MODES).toString()
+    sendEvent(name: "supportedThermostatFanModes", value: stmJSON, displayed: false, isStateChange: true)
 	updated()
 }
 
 void updated() {
     log.info "updated..."
-    log.warn "debug logging is: ${logEnable == true}"
-    if (logEnable) runIn(1800, logsOff)
-    if (logTrace) runIn(1800, logsOff)
+	log.warn "debug logging is: ${logEnable == true}"
+	state.clear()
+	if (logEnable) runIn(3600, logsOff)
+	if (logTrace) runIn(1800, logsOff)
 
-    _updatedTuya()
+	_updatedTuya()
 
-    // Configure poll interval, only the parent pull for status
-    if (poll_interval.toInteger() != null) {
-        //Schedule run
+	// Configure poll interval, only the parent pull for status
+	if (poll_interval.toInteger() != null) {
+		//Schedule run
 
-        if (poll_interval.toInteger() == 0) {
-            unschedule(refresh)
-        } else if (poll_interval.toInteger() < 60) {
-            schedule("*/${poll_interval} * * ? * *", refresh)
-        } else if (poll_interval.toInteger() < 60*60) {
-            minutes = poll_interval.toInteger()/60
-            if(logEnable) log.debug "Setting schedule to Refresh every ${minutes} minutes"
-            schedule("0 */${minutes} * ? * *", refresh)
-        }
-    }
-    refresh()
+		if (poll_interval.toInteger() == 0) {
+			unschedule(status)
+		} else if (poll_interval.toInteger() < 60) {
+			schedule("*/${poll_interval} * * ? * *", status)
+		} else if (poll_interval.toInteger() < 60*60) {
+			minutes = poll_interval.toInteger()/60
+			if(logEnable) log.debug "Setting schedule to pull every ${minutes} minutes"
+			schedule("0 */${minutes} * ? * *", status)
+		}
+
+		status()
+
+	} else {
+		status()
+	}
+
+	sendEvent(name: "switch", value: "off")
 }
 
 void refresh() {
 	if (logTrace) log.trace("refresh()")
-    send("status", [:])
+
+	status()
 }
 
 void on() {
@@ -126,44 +144,23 @@ void off() {
 	runInMillis(250, 'sendSetMessage')
 }
 
-// Component command to control Towel Rack features
-void setFeature(feature=null,value=null) {
-    if (!feature || !value) {
-        log.error "setFeature() requires a valid feature code ${FEATUES.values()} and value ${ONOFF.join(', ')}"
-        return
-    }
-    feature = feature.toLowerCase()
+void setCountDown(value) {
+    if (logEnable) { log.debug "setCountDown(): value ${value}" }
     value = value.toLowerCase()
-    if (logEnable) { log.debug "setCode(): feature: ${feature}, value ${value}" }
-    def key = FEATURES.find { it.value == feature }?.key
-    if (!key) {
-        log.error "setFeature(): Invalid feature '${feature}'.  Feature must be ONE of these following features: ${FEATURES.values()}"
+    if (!COUNTDOWNLIST.contains(value)) {
+        log.error "setCountDown(): Invalid value '${value}'.  Value must be ONE of these following: ${COUNTDOWNLIST.join(', ')}."
         return
     }
-    if (!ONOFF.contains(value)) {
-        log.error "setFeature(): Invalid value '${value}'.  Value must be either: ${ONOFF.join(', ')}."
-        return
-    }
-    return
-    state.statePayload[key] = (value == 'on')?true:false
-    runInMillis(250, 'sendSetMessage')
+	state.statePayload[12] = value
+	runInMillis(250, 'sendSetMessage')
 }
 
-void setCountdownTimer(String value) {
-    value = value.toLowerCase()
-    def key
-    if (value.isNumber() || value == 'cancel') {
-        key = SPA_COUNTDOWNTIMERLIST.find { it.value == value }?.key
-    } else {
-        key = (DPSMAP['12']['values']['range'].contains(value))?value:null
-    }
-    if (logEnable) { log.debug "setCountDown(): value ${value} = key: ${key}" }
-    if (key) {
-        if (logEnable) {log.debug "==> sendSetMessage() → state.statePayload[12] = ${key}"}
-        state.statePayload[12] = key
-        runInMillis(250, 'sendSetMessage')
-    } else log.error "CountDownTimer argument value '${value}' is invalid.  The value must contain one of these values: ${SPA_COUNTDOWNTIMERLIST.values()}"
+void setHeatingSetpoint(BigDecimal temperature) {
+    if (logEnable) { log.debug "setHeatingSetpoint(): value ${temperature}" }
+	state.statePayload[10] = temperature
+	runInMillis(250, 'sendSetMessage')
 }
+
 
 def SendCustomDataToDevice(endpoint, data) {
 	if (logTrace) log.trace("SendCustomDataToDevice($endpoint, $data)")
@@ -198,86 +195,60 @@ def sendSetMessage() {
 	state.statePayload = [:]
 }
 
+def status() {
+	if (logTrace) log.trace("status()")
+
+	send("status", [:])
+}
+
 def parse(String message) {
     if (logTrace) log.trace("parse()")
 
     List results = _parseTuya(message)
     if (!results) return
-    if (logTrace) log.trace "==> parse(): results= ${results}"
+    if (logEnable) log.debug "==> Parse() results= ${results}"
 
     results.each {status_object ->
-        Boolean switchState = true
         status_object.dps.each { k, v ->
-            if (logEnable) log.debug "${DPSMAP[k]['code']} = ${v}"
-            // Map Tuya variables to Hubitat Thermostat attributes
+            switch (DPSMAP[k]['type']) {
+                case 'Boolean':
+                v = (v?'on':'off')
+                default:
+                    if (logEnable) log.debug "** ${DPSMAP[k]['code']} = ${v}"
+                    sendEvent(name: DPSMAP[k]['code'], value : v)
+                break
+            }
+            // Update Hubitat Themostat attributes
             switch (DPSMAP[k]['code']) {
                 case "switch":
-                switchState = v
-                case 'light':
-                sendEvent(name: DPSMAP[k]['code'], value : v = (v?'on':'off'))
-                if (logEnable) log.debug "** sendEvent ${DPSMAP[k]['code']} = ${v}"
-                break
-
-                case 'temp_unit_convert':
-                v= "°${v.toUpperCase()}"
-                state.units = v
-                case 'eco':
-                case 'child_lock':
-                case 'mode':
-                case 'countdown_left':
-                v =  formatSeconds(v)
-//                v = "${(v/60)} mins"
-//                String timeLeft = (hours)?"${hours} hr ":'' + "${minutes} mins"
-//                log.debug "==> timeLeft= ${timeleft}"
-                case 'state':
-                case 'level':
-                if (logEnable) log.debug "** sendEvent ${DPSMAP[k]['code']} = ${v}"
-                sendEvent(name: DPSMAP[k]['code'], value : v)
+                def mode = (v == 'on')?'heat':'off'
+                if (logEnable) log.debug "** thermostatMode = ${mode}"
+                sendEvent(name: "thermostatMode", value : mode)
+                mode = (v == 'on')?'heating':'off'
+                if (logEnable) log.debug "** thermostatOperatingState = ${mode}"
+                sendEvent(name: "thermostatOperatingState", value : mode)
+                mode = (v == 'on')?'auto':'off'
+                sendEvent(name: "thermostatFanMode", value : v)
                 break
 
                 case "temp_current_f":
-                // Send temperature value events when towel warmer switch is on
-                if (switchState) {
-                    if (logEnable) log.debug "** sendEvent temperature = ${state.units}"
-                    sendEvent(name: "temperature", value : v, unit: "${state.units}")
-                } else {
-                    // Only send temperature value events by units of 5 when towel warmer switch is off (Cooling Down or in Standby)
-                    if (device.currentValue('temperature').toInteger()-DELTA_TEMPERATURE > v.toInteger()) {
-                        if (logEnable) log.debug "** sendEvent temperature = ${v}°F"
-                        sendEvent(name: "temperature", value : v, unit: "${state.units}")
-                    }
-                }
+                if (logEnable) log.debug "** temperature = ${v}°F"
+                sendEvent(name: "temperature", value : v, unit: 'F', descriptionText: "temperature is ${v}${'F'}")
                 break
 
+                temp_set
+
+                case "temp_set":
+                if (logEnable) log.debug "** heatingSetpoint = ${celsiusToFahrenheit(v)}°F"
+                sendEvent([name: 'heatingSetpoint', value: celsiusToFahrenheit(v), unit: 'F', descriptionText: "heating set point is ${v}${'F'}"])
+                if (logEnable) log.debug "** thermostatSetpoint = ${celsiusToFahrenheit(v)}°F"
+                sendEvent([name: 'thermostatSetpoint', value: celsiusToFahrenheit(v), unit: 'F', descriptionText: "thermostat set point is ${v}${'F'}"])
+                break
                 default:
-                    if (logEnable) log.debug ">> Ignoring ${DPSMAP[k]['code']} = ${v}"
                     break
             }
         }
     }
-}
-
-public static String formatSeconds(int timeInSeconds)
-{
-    int hours = timeInSeconds / 3600;
-    int secondsLeft = timeInSeconds - hours * 3600;
-    int minutes = secondsLeft / 60;
-    int seconds = secondsLeft - minutes * 60;
-
-    String formattedTime = "";
-    if (hours < 10)
-        formattedTime += "0";
-    formattedTime += hours + ":";
-
-    if (minutes < 10)
-        formattedTime += "0";
-    formattedTime += minutes + ":";
-
-    if (seconds < 10)
-        formattedTime += "0";
-    formattedTime += seconds ;
-
-    return formattedTime;
 }
 
 
@@ -720,14 +691,14 @@ Map decodeIncomingFrame(byte[] incomingData, Integer sofIndex=0, byte[] testKey=
 
 	Object status = [:]
 
-    // Check if incoming message is a JSON object
-    if (plainTextMessage.indexOf('dps') != -1) {
-        if (logTrace) log.trace "Found JSON object in string"
-        def jsonSlurper = new groovy.json.JsonSlurper()
-        status = jsonSlurper.parseText(plainTextMessage.substring(plainTextMessage.indexOf('{')))
-    } else {
-        if (logTrace) log.trace "Did not find a JSON object in string"
-    }
+	// Check if incoming message is a JSON object
+	if (plainTextMessage.indexOf('dps') != -1) {
+		if (logTrace) log.trace "Found JSON object in string"
+		def jsonSlurper = new groovy.json.JsonSlurper()
+		status = jsonSlurper.parseText(plainTextMessage.substring(plainTextMessage.indexOf('{')))
+	} else {
+		if (logTrace) log.trace "Did not find a JSON object in string"
+	}
 
 	// Post process the incoming payload
 	switch (frameTypes[frameType]) {
@@ -1300,6 +1271,16 @@ def CRC32b(bytes, length) {
 	return ~crc
 }
 
+// Constants
+
+@Field static final List THERMO_STAT_MODES = ["heat","off"]
+@Field static final List THERMO_STAT_FAN_MODES = ["off", "auto"]
+@Field static final List THERMO_STAT_OPERATING_STATE = ["heating", "off"]
+@Field static final List COUNTDOWNLIST = ["1h","2h","3h","4h","5h","6h","cancel"]
+@Field static final List MODES = ["smart", "manual"]
+@Field static final List ONOFF = ["on", "off"]
+@Field static final List CODES = ["light","child_lock","eco"]
+@Field static final Map POLLING_INT = ['01':'01 Mins','02':'02 Mins','03':'03 Mins','04':'04 Mins','05':'05 Mins','10':'10 Mins','30':'30 Mins','0':'No Polling']
 @Field static final Map DPSMAP = [
     "1": [
         "code": "switch",
