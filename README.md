@@ -5,7 +5,7 @@
 ## SmartLife (Tuya) Tested Devices
 * [Dywarmic Smart Towel Warmer](https://www.dywarmic.com/)
 
-<a href="https://www.amazon.com/Dywarmic-Smart-Towel-Warmer-Coolbreeze/dp/B0D9Y8DSMS" target="_blank"> <img src=https://raw.githubusercontent.com/KurtSanders/Hubitat-SmartLife-Integration/refs/heads/main/Images/Dywarmic%20Warmer%20Top%20Down.jpg align="center" width="400" height="400" /> </a>
+<a href="https://www.amazon.com/Dywarmic-Smart-Towel-Warmer-Coolbreeze/dp/B0D9Y8DSMS" target="_blank"> <img src=https://raw.githubusercontent.com/KurtSanders/Hubitat-SmartLife-Integration/refs/heads/main/Images/Dywarmic%20Warmer%20Top%20Down.jpg align="center" width="200" height="200" /> </a>
 
 [Amazon USA](https://www.amazon.com/Dywarmic-Smart-Towel-Warmer-Coolbreeze/dp/B0D9Y8DSMS) <a href="https://www.amazon.com/Dywarmic-Smart-Towel-Warmer-Coolbreeze/dp/B0D9Y8DSMS" target="_blank"> <img src="https://raw.githubusercontent.com/KurtSanders/Hubitat-SmartLife-Integration/refs/heads/main/Images/amazon-link-logo.jpg" width="30" height="25" /> </a>
 
