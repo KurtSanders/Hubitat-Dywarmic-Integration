@@ -17,11 +17,11 @@
 
 ## Prerequisites 
 * [Hubitat Elevation Hub](https://hubitat.com/)
-* Knowledge of adding/configuring Hubitat User Apps  
-* Use of [Hubitat Package Manager](https://hubitatpackagemanager.hubitatcommunity.com/installing.html) to install/update device preferences
+* Knowledge of [adding/configuring a Hubitat virtual device](https://community.hubitat.com/t/creating-a-virtual-device-for-wifi-devices/46514)  
+* Use of [Hubitat Package Manager](https://hubitatpackagemanager.hubitatcommunity.com/installing.html) to install/update this custom device driver.
 * Active member of the [Hubitat Community](https://community.hubitat.com/) for "Best-Effort" support and new release information.
-* Tuya Developer Account
-* Knowledge of using the Python Language
+* [Tuya Developer Account](https://developer.tuya.com/en/)
+* Knowledge of using the [Python Language](https://www.datacamp.com/blog/how-to-learn-python-expert-guide)
 
 ## Installation
 ### Tuya Hubitat Plugin
