@@ -10,10 +10,15 @@
 [See it on Amazon USA](https://www.amazon.com/Dywarmic-Smart-Towel-Warmer-Coolbreeze/dp/B0D9Y8DSMS) <a href="https://www.amazon.com/Dywarmic-Smart-Towel-Warmer-Coolbreeze/dp/B0D9Y8DSMS" target="_blank"> <img src="https://raw.githubusercontent.com/KurtSanders/Hubitat-SmartLife-Integration/refs/heads/main/Images/amazon-link-logo.jpg" width="30" height="25" /> </a>
 
 ## Integration Features:
-* Hubitat local direct device API access (No Cloud)
-* Switch: Turn On/Off
-* Duration: Set Intervals in 20 min increments
-* Device API Debugging
+
+| Capability | Description |
+|------|--------|
+| Hubitat local direct device API access|Eliminates cloud dependancy|
+| Switch | * Turn On <br>* Turn Off|
+| Set Countdown Timer | * Set intervals in 20 min increments |
+| Device API Debugging | * Custom Data To Device<br>* Send Custom JSON Object |
+| Set Features| * Child_Lock<br>* Eco<br>* Light|
+| Refresh| Updates device states |
 
 ## Prerequisites 
 * [Hubitat Elevation Hub](https://hubitat.com/)
@@ -59,11 +64,11 @@
 9. In Hubitat, open "Devices", then click "Add Device", and click "Virtual".
 10. Give the device a Device Name" and select the Type: "Hubitat SmartLife Integration", and click "Save Device."
 11. Now, add the "Device IP", "Device ID", "Device local Key" and select the Tuya protocol version that you got from point 6.
-12. Lastly set the Endpoint you want to control. During step 6 you should see something called "Status" together with each device, something like this: ```Status: {'1': False, '2': False, '3': False, '5': 0}```, the endpoints are the numbers in front of the ```False```. This status block is for a "Dywarmic Towel Warmer", where each number corresponds to a status of the device.
+12. Lastly, set the Endpoint you want to control. During step 6, you should see something called "Status" together with each device, something like this: ```Status: {'1': False, '2': False, '3': False, '5': 0}```, the endpoints are the numbers in front of the ```False```. This status block is for a "Dywarmic Towel Warmer", where each number corresponds to a status of the device.
 13. Click "Save Preferences"
 14. You should now be able to control your Towel Warmer device via Hubitat on the local network only.
 
-It is highly recommended to assign a static IP on your (wifi)router to the device so that it does not change ip-address, then the Hubitat integration won't be able to find the device.
+It is highly recommended that you lock a static IP on your (wifi)router to the towel warmer device so it does not change its IP address. If it gets a new ip address, then this Hubitat integration won't be able to find the device, and you will need to change the ip address in the device driver preferences.
 
 ## FAQ
 
@@ -72,5 +77,7 @@ It is highly recommended to assign a static IP on your (wifi)router to the devic
 A: After expiration, you can renew the subscription for free. The Trial Edition allows you to use all free API products but limits the quota of API calls. For more information about the quota, see [Pricing](https://developer.Tuya.com/en/docs/iot/membership-service?id=K9m8k45jwvg9j&_source=bb1b5b405f43ab2b3c7a7cb9ca95773d).
 
 **Q: Issues / Limitations** 
+
+* Updates to a towel warmer firmware or API may render this custom device driver's connectivity in the future.  Please report to Habitat's open forum support thread.
 
 **Q: Misc Features / Tips**
