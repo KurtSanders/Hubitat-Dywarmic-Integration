@@ -93,7 +93,6 @@ void updated() {
 		log.error "The Device Preference required imputs for device have been not entered, exiting"
 		return
 	}
-}
 
     _updatedTuya()
 
