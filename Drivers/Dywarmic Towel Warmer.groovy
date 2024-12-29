@@ -89,12 +89,11 @@ void updated() {
     log.warn "debug logging is: ${logEnable == true}"
     if (logEnable) runIn(1800, logsOff)
     if (logTrace) runIn(1800, logsOff)
-    [ipaddress,devId,localKey].any {
-        if (it == null) {
-        log.error "Device Preference required imputs for device have been not entered, exiting"
-        return
-        }
-    }
+	if ([ipaddress,devId,localKey].contains(null) || [ipaddress,devId,localKey].contains("")) {
+		log.error "The Device Preference required imputs for device have been not entered, exiting"
+		return
+	}
+}
 
     _updatedTuya()
 
