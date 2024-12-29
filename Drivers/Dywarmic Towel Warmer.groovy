@@ -86,11 +86,11 @@ void installed() {
 
 void updated() {
     log.info "updated..."
-    log.warn "debug logging is: ${logEnable == true}"
+    log.debug "debug logging is: ${logEnable == true}"
     if (logEnable) runIn(1800, logsOff)
     if (logTrace) runIn(1800, logsOff)
 	if ([ipaddress,devId,localKey].contains(null) || [ipaddress,devId,localKey].contains("")) {
-		log.error "The Device Preference required imputs for device have been not entered, exiting"
+		log.error "One or more of the device preference required inputs, (eg. ipaddress, devId or localKey) are blank/empty, exiting..."
 		return
 	}
 
