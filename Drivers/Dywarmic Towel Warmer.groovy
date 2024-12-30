@@ -16,49 +16,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import groovy.transform.Field
 import java.text.SimpleDateFormat
 import groovy.json.*
 
-    metadata {
-        definition(name: "Dywarmic Towel Warmer",
-                   namespace: "kurtsanders",
-                   author: "Kurt Sanders",
-                   importUrl: "",
-                   singleThreaded: true) {
-            capability "Actuator"
-            capability "Switch"
-            capability 'TemperatureMeasurement'
-            capability 'Refresh'
+metadata {
+definition(name: "Dywarmic Towel Warmer",
+    	namespace: "kurtsanders",
+       	author: "Kurt Sanders",
+       	importUrl: "",
+       	singleThreaded: true) {
+    capability "Actuator"
+    capability "Switch"
+    capability 'TemperatureMeasurement'
+    capability 'Refresh'
 
-            attribute "countdown_left", "number"
-            attribute "light", "string"
-            attribute "child_lock", "string"
-            attribute "mode", "string"
-            attribute "level", "string"
-            attribute "eco", "string"
-            attribute "temp_unit_convert", "string"
-            attribute "error", "string"
-            attribute "state", "string"
-            attribute "polling", "boolean"
+    attribute "countdown_left", "number"
+    attribute "light", "string"
+    attribute "child_lock", "string"
+    attribute "mode", "string"
+    attribute "level", "string"
+    attribute "eco", "string"
+    attribute "temp_unit_convert", "string"
+    attribute "error", "string"
+    attribute "state", "string"
+    attribute "polling", "boolean"
 
-            command "Disconnect"
-            command "SendCustomJSONObject", [[name:"jsonPayload*", type: "STRING", description:"Format: {\"1\":true, \"12\":\"cancel\"}"]]
-            command "SendCustomDataToDevice", [[name:"endpoint*", type:"NUMBER", description:"To which endpint(dps) do you want the data to be sent"], [name:"data*", type:"STRING", description:"the data to be sent, treated as string, but true and false is converted"]]
-            command "setCountdownTimer", [[name: "Count Down Timer Units (mins)*", type:"ENUM", description:"Sets the Count Down Timer [mins]", constraints:SPA_COUNTDOWNTIMERLIST]]
-            command "setFeature", [
-                [name: "Feature*", type:"ENUM", description:"Feature", constraints:FEATURES],
-                [name: "Value*", type:"ENUM", description:"Value", constraints:ONOFF],
-            ]
-        }
+        command "Disconnect"
+        command "SendCustomJSONObject", [[name:"jsonPayload*", type: "STRING", description:"Format: {\"1\":true, \"12\":\"cancel\"}"]]
+        command "SendCustomDataToDevice", [[name:"endpoint*", type:"NUMBER", description:"To which endpint(dps) do you want the data to be sent"], [name:"data*", type:"STRING", description:"the data to be sent, treated as string, but true and false is converted"]]
+        command "setCountdownTimer", [[name: "Count Down Timer Units (mins)*", type:"ENUM", description:"Sets the Count Down Timer [mins]", constraints:SPA_COUNTDOWNTIMERLIST]]
+        command "setFeature", [
+            [name: "Feature*", type:"ENUM", description:"Feature", constraints:FEATURES],
+            [name: "Value*", type:"ENUM", description:"Value", constraints:ONOFF],
+        ]
     }
+}
+
 @Field static final Map SPA_COUNTDOWNTIMERLIST           = ["1h":'20',"2h":'40',"3h":'60',"4h":'80',"5h":'100',"6h":'120',"cancel":"cancel"]
 @Field static final Integer DELTA_TEMPERATURE            = 5
 @Field static final List ONOFF                           = ["on", "off"]
 @Field static final Map FEATURES                         = ["8":"light","7":"child_lock","6":"eco"]
 
 preferences {
-    section("Dywarmic Towel Warmer Device Config") {
+	section("Dywarmic Towel Warmer Device Config") {
         input "ipaddress", "text", title: "Device IP:", required: true, description: "<small>tuya device local IP address. Found by using tools like tinytuya. Tip: configure a fixed IP address for your tuya device on your network to make sure the IP does not change over time.</small>"
         input "devId", "text", title: "Device ID:", required: true, description: "<small>Unique tuya device ID. Found by using tools like tinytuya.</small>"
         input "localKey", "text", title: "Device local key:", required: true, description: "<small>The local key used  for encrypted communication between HE and the tuya Deivce. Found by using tools like tinytuya.</small>"
@@ -85,7 +87,7 @@ void installed() {
 }
 
 void updated() {
-    log.info "updated..."
+	log.info "updated..."
     log.debug "debug logging is: ${logEnable == true}"
     if (logEnable) runIn(1800, logsOff)
     if (logTrace) runIn(1800, logsOff)
@@ -94,7 +96,7 @@ void updated() {
 		return
 	}
 
-    _updatedTuya()
+_updatedTuya()
 
     // Configure poll interval, only the parent pull for status
     if (poll_interval.toInteger() != null) {
@@ -217,32 +219,29 @@ def parse(String message) {
             // Map Tuya variables to Hubitat Thermostat attributes
             switch (DPSMAP[k]['code']) {
                 case "switch":
-                switchState = v
+	            	v = (v?'on':'off')
                 case 'light':
-                sendEvent(name: DPSMAP[k]['code'], value : v = (v?'on':'off'))
-                if (logEnable) log.debug "** sendEvent ${DPSMAP[k]['code']} = ${v}"
+                	sendEvent(name: DPSMAP[k]['code'], value : v)
+                	if (logEnable) log.debug "** sendEvent ${DPSMAP[k]['code']} = ${v}"
                 break
 
                 case 'temp_unit_convert':
-                v= "°${v.toUpperCase()}"
-                state.units = v
+	                v= "°${v.toUpperCase()}"
+	                state.units = v
                 case 'eco':
                 case 'child_lock':
                 case 'mode':
                 case 'countdown_left':
-                v =  formatSeconds(v)
-//                v = "${(v/60)} mins"
-//                String timeLeft = (hours)?"${hours} hr ":'' + "${minutes} mins"
-//                log.debug "==> timeLeft= ${timeleft}"
+	                v =  formatSeconds(v)
                 case 'state':
                 case 'level':
-                if (logEnable) log.debug "** sendEvent ${DPSMAP[k]['code']} = ${v}"
-                sendEvent(name: DPSMAP[k]['code'], value : v)
+	                if (logEnable) log.debug "** sendEvent ${DPSMAP[k]['code']} = ${v}"
+    	            sendEvent(name: DPSMAP[k]['code'], value : v)
                 break
 
                 case "temp_current_f":
                 // Send temperature value events when towel warmer switch is on
-                if (switchState) {
+                if (device.currentValue('switch')) {
                     if (logEnable) log.debug "** sendEvent temperature = ${state.units}"
                     sendEvent(name: "temperature", value : v, unit: "${state.units}")
                 } else {
