@@ -20,11 +20,12 @@
 import groovy.transform.Field
 import java.text.SimpleDateFormat
 import groovy.json.*
+#include kurtsanders.SanderSoft-Library
 
 metadata {
-definition(name: "Dywarmic Towel Warmer",
-    	namespace: "kurtsanders",
-       	author: "Kurt Sanders",
+definition(name: PARENT_DEVICE_NAME,
+    	namespace: NAMESPACE,
+       	author: AUTHOR_NAME,
        	importUrl: "",
        	singleThreaded: true) {
     capability "Actuator"
@@ -34,10 +35,6 @@ definition(name: "Dywarmic Towel Warmer",
 
     attribute "countdown_left", "number"
     attribute "light", "string"
-    attribute "child_lock", "string"
-    attribute "mode", "string"
-    attribute "level", "string"
-    attribute "eco", "string"
     attribute "temp_unit_convert", "string"
     attribute "error", "string"
     attribute "state", "string"
@@ -54,49 +51,53 @@ definition(name: "Dywarmic Towel Warmer",
     }
 }
 
-@Field static final Map SPA_COUNTDOWNTIMERLIST           = ["1h":'20',"2h":'40',"3h":'60',"4h":'80',"5h":'100',"6h":'120',"cancel":"cancel"]
-@Field static final Integer DELTA_TEMPERATURE            = 5
-@Field static final List ONOFF                           = ["on", "off"]
-@Field static final Map FEATURES                         = ["8":"light","7":"child_lock","6":"eco"]
+// Variable Constants
+@Field static String PARENT_DEVICE_NAME            = "Dywarmic Towel Warmer"
+@Field static String AUTHOR_NAME                   = "Kurt Sanders"
+@Field static String NAMESPACE                     = "kurtsanders"
+@Field static final String VERSION 				   = "0.0.1"
+@Field static final String COMM_LINK               = "https://community.hubitat.com/t/release-hb-bwa-spamanager-app/128842"
+@Field static final String GITHUB_LINK             = "https://github.com/KurtSanders/Hubitat-Dywarmic-Integration/"
+@Field static final Map SPA_COUNTDOWNTIMERLIST     = ["1h":'20',"2h":'40',"3h":'60',"4h":'80',"5h":'100',"6h":'120',"cancel":"cancel"]
+@Field static final Integer DELTA_TEMPERATURE      = 5
+@Field static final List ONOFF                     = ["on", "off"]
+@Field static final Map FEATURES                   = ["8":"light","7":"child_lock","6":"eco"]
 
 preferences {
-	section("Dywarmic Towel Warmer Device Config") {
-        input "ipaddress", "text", title: "Device IP:", required: true, description: "<small>tuya device local IP address. Found by using tools like tinytuya. Tip: configure a fixed IP address for your tuya device on your network to make sure the IP does not change over time.</small>"
-        input "devId", "text", title: "Device ID:", required: true, description: "<small>Unique tuya device ID. Found by using tools like tinytuya.</small>"
-        input "localKey", "text", title: "Device local key:", required: true, description: "<small>The local key used  for encrypted communication between HE and the tuya Deivce. Found by using tools like tinytuya.</small>"
-        input name: "logEnable", type: "bool", title: "Enable <u>debug</u> logging", defaultValue: true, description: "<small>If issues are experienced it might help to turn on debug logging and see the debug logs, automatically turned off after 30 min. Check device IP, ID and local key make sure they are correct. Also a power off/on on the tuya device might help.</small>"
-        input name: "logTrace", type: "bool", title: "Enable driver level <u>trace</u> logging", defaultValue: true, description: "<small>For trace level debugging, it could be helpful to follow the program flow to make sure the correct functions are called. (Auto disabled after 30 min)</small>"
-        input "tuyaProtVersion", "enum", title: "Select tuya protocol version: ", required: true, defaultValue: 34, options: [31: "3.1", 33 : "3.3", 34: "3.4"], description: "<small>Select the correct protocol version corresponding to your device. If you run firmware update on the device you should expect the driver protocol version to update. Which protocol is used can be found using tools like tinytuya.</small>"
-        input name: "poll_interval", type: "enum", title: "Configure poll interval:", defaultValue: 0, options: [0: "No polling", 1:"Every 1 second", 2:"Every 2 second", 3: "Every 3 second", 5: "Every 5 second", 10: "Every 10 second", 15: "Every 15 second", 20: "Every 20 second", 30: "Every 30 second", 60: "Every 1 min", 120: "Every 2 min", 180: "Every 3 min"], description: "<small>Old way of reading status of the deivce. Use \"No polling\" when auto reconnect or heart beat is enabled.</small>"
-        input name: "autoReconnect", type: "bool", title: "Auto reconnect on socket close", defaultValue: true, description: "<small>A communication channel is kept open between HE and the tuya device. Every 30 s the socket is closed and re-opened. This is useful if the device is a switch, or is also being controlled from external apps like Smart Life etc. For <b>3.4</b> it is also smart to enable the Use heart beat method to reduce data traffic.</small>"
-        input name: "heartBeatMethod", type: "bool", title: "Use heart beat method to keep connection alive", defaultValue: true, description: "<small>Use a heart beat to keep the connection alive, i.e. a message is sent every 20 seconds to the device, the causes less data traffic on <b>3.4</b> devices as sessions don't have to be negotiated all the time.</small>"
-    }
-}
+    input "ipaddress", "text", title: "Device IP:", required: true, description: "<small>tuya device local IP address. Found by using tools like tinytuya. Tip: configure a fixed IP address for your tuya device on your network to make sure the IP does not change over time.</small>"
+    input "devId", "text", title: "Device ID:", required: true, description: "<small>Unique tuya device ID. Found by using tools like tinytuya.</small>"
+    input "localKey", "text", title: "Device local key:", required: true, description: "<small>The local key used  for encrypted communication between HE and the tuya Deivce. Found by using tools like tinytuya.</small>"
 
-void logsOff() {
-	log.warn "debug and trace logging disabled..."
-	device.updateSetting("logEnable", [value: "false", type: "bool"])
-	device.updateSetting("logTrace", [value: "false", type: "bool"])
+    input "tuyaProtVersion", "enum", title: "Select tuya protocol version: ", required: true, defaultValue: 34, options: [31: "3.1", 33 : "3.3", 34: "3.4"], description: "<small>Select the correct protocol version corresponding to your device. If you run firmware update on the device you should expect the driver protocol version to update. Which protocol is used can be found using tools like tinytuya.</small>"
+    input name: "poll_interval", type: "enum", title: "Configure poll interval:", defaultValue: 0, options: [0: "No polling", 1:"Every 1 second", 2:"Every 2 second", 3: "Every 3 second", 5: "Every 5 second", 10: "Every 10 second", 15: "Every 15 second", 20: "Every 20 second", 30: "Every 30 second", 60: "Every 1 min", 120: "Every 2 min", 180: "Every 3 min"], description: "<small>Old way of reading status of the deivce. Use \"No polling\" when auto reconnect or heart beat is enabled.</small>"
+    input name: "autoReconnect", type: "bool", title: "Auto reconnect on socket close", defaultValue: true, description: "<small>A communication channel is kept open between HE and the tuya device. Every 30 s the socket is closed and re-opened. This is useful if the device is a switch, or is also being controlled from external apps like Smart Life etc. For <b>3.4</b> it is also smart to enable the Use heart beat method to reduce data traffic.</small>"
+    input name: "heartBeatMethod", type: "bool", title: "Use heart beat method to keep connection alive", defaultValue: true, description: "<small>Use a heart beat to keep the connection alive, i.e. a message is sent every 20 seconds to the device, the causes less data traffic on <b>3.4</b> devices as sessions don't have to be negotiated all the time.</small>"
+
+    //Logging Options
+    input name: "logLevel", type: "enum", title: fmtTitle("Logging Level"),
+        description: fmtDesc("Logs selected level and above"), defaultValue: 0, options: LOG_LEVELS
+    input name: "logLevelTime", type: "enum", title: fmtTitle("Logging Level Time"),
+        description: fmtDesc("Time to enable Debug/Trace logging"),defaultValue: 0, options: LOG_TIMES
+    //Help Link
+    input name: "helpInfo", type: "hidden", title: fmtHelpInfo("Community Link")
 }
 
 void installed() {
-    device.updateSetting("logEnable", [value: "true", type: "bool"])
-    device.updateSetting("logTrace", [value: "false", type: "bool"])
+    setLogLevel("Debug", "30 Minutes")
+    logInfo "Setting Inital logging level to 'Debug' for 30 minutes"
     state.units = location.temperatureScale
     updated()
 }
 
 void updated() {
-	log.info "updated..."
-    log.debug "debug logging is: ${logEnable == true}"
-    if (logEnable) runIn(1800, logsOff)
-    if (logTrace) runIn(1800, logsOff)
+	logInfo "Preferences Updated..."
 	if ([ipaddress,devId,localKey].contains(null) || [ipaddress,devId,localKey].contains("")) {
 		log.error "One or more of the device preference required inputs, (eg. ipaddress, devId or localKey) are blank/empty, exiting..."
 		return
 	}
+    checkLogLevel()
 
-_updatedTuya()
+	_updatedTuya()
 
     // Configure poll interval, only the parent pull for status
     if (poll_interval.toInteger() != null) {
@@ -108,7 +109,7 @@ _updatedTuya()
             schedule("*/${poll_interval} * * ? * *", refresh)
         } else if (poll_interval.toInteger() < 60*60) {
             minutes = poll_interval.toInteger()/60
-            if(logEnable) log.debug "Setting schedule to Refresh every ${minutes} minutes"
+            logDebug "Setting schedule to Refresh every ${minutes} minutes"
             schedule("0 */${minutes} * ? * *", refresh)
         }
     }
@@ -116,19 +117,20 @@ _updatedTuya()
 }
 
 void refresh() {
-	if (logTrace) log.trace("refresh()")
+	logTrace ("refresh()")
     send("status", [:])
 }
 
 void on() {
-	if (logTrace) log.trace("on()")
+	logTrace ("on()")
+    sendEvent(name: 'switch', value : 'on')
 	state.statePayload[1] = true
 	runInMillis(250, 'sendSetMessage')
 }
 
 void off() {
-	if (logTrace) log.trace("off()")
-
+	logTrace ("off()")
+    sendEvent(name: 'switch', value : 'off')
 	state.statePayload[1] = false
 	runInMillis(250, 'sendSetMessage')
 }
@@ -141,7 +143,7 @@ void setFeature(feature=null,value=null) {
     }
     feature = feature.toLowerCase()
     value = value.toLowerCase()
-    if (logEnable) { log.debug "setCode(): feature: ${feature}, value ${value}" }
+    logDebug "setCode(): feature: ${feature}, value ${value}"
     def key = FEATURES.find { it.value == feature }?.key
     if (!key) {
         log.error "setFeature(): Invalid feature '${feature}'.  Feature must be ONE of these following features: ${FEATURES.values()}"
@@ -164,16 +166,16 @@ void setCountdownTimer(String value) {
     } else {
         key = (DPSMAP['12']['values']['range'].contains(value))?value:null
     }
-    if (logEnable) { log.debug "setCountDown(): value ${value} = key: ${key}" }
+    logDebug "setCountDown(): value ${value} = key: ${key}"
     if (key) {
-        if (logEnable) {log.debug "==> sendSetMessage() → state.statePayload[12] = ${key}"}
+        logDebug "==> sendSetMessage() → state.statePayload[12] = ${key}"
         state.statePayload[12] = key
         runInMillis(250, 'sendSetMessage')
     } else log.error "CountDownTimer argument value '${value}' is invalid.  The value must contain one of these values: ${SPA_COUNTDOWNTIMERLIST.values()}"
 }
 
 def SendCustomDataToDevice(endpoint, data) {
-	if (logTrace) log.trace("SendCustomDataToDevice($endpoint, $data)")
+	logTrace ("SendCustomDataToDevice($endpoint, $data)")
 
 	// A fix for a common use-case where true and false is sent
 	// these values must be converted to boolean values to work
@@ -188,7 +190,7 @@ def SendCustomDataToDevice(endpoint, data) {
 
 def SendCustomJSONObject(String _s_json_data)
 {
-	if (logTrace) log.trace("SendCustomJSONObject($_s_json_data)")
+	logTrace ("SendCustomJSONObject($_s_json_data)")
 
 	status = [:]
 
@@ -199,91 +201,91 @@ def SendCustomJSONObject(String _s_json_data)
 }
 
 def sendSetMessage() {
-	if (logTrace) log.trace("sendSetMessage() // current state.statePayload = $state.statePayload)")
+	logTrace ("sendSetMessage() // current state.statePayload = $state.statePayload)")
 
 	send("set", state.statePayload)
 	state.statePayload = [:]
 }
 
 def parse(String message) {
-    if (logTrace) log.trace("parse()")
+    logTrace ("parse()")
 
     List results = _parseTuya(message)
     if (!results) return
-    if (logTrace) log.trace "==> parse(): results= ${results}"
+    logTrace "parse(): results= ${results}"
+    String code
 
     results.each {status_object ->
-        Boolean switchState = true
         status_object.dps.each { k, v ->
-            if (logEnable) log.debug "${DPSMAP[k]['code']} = ${v}"
+            code = DPSMAP[k]['code']
+            logDebug "DPS Code: ${code} => ${v}"
             // Map Tuya variables to Hubitat Thermostat attributes
-            switch (DPSMAP[k]['code']) {
+            switch (code) {
                 case "switch":
-	            	v = (v?'on':'off')
                 case 'light':
-                	sendEvent(name: DPSMAP[k]['code'], value : v)
-                	if (logEnable) log.debug "** sendEvent ${DPSMAP[k]['code']} = ${v}"
-                break
-
+	            	v = (v?'on':'off')
+                	makeEvent(code,v)
+                	break
                 case 'temp_unit_convert':
+	                if (device.currentValue('switch')=='off') break
 	                v= "°${v.toUpperCase()}"
 	                state.units = v
-                case 'eco':
-                case 'child_lock':
-                case 'mode':
+                	makeEvent(code,v)
+                	break
                 case 'countdown_left':
-	                v =  formatSeconds(v)
+	                v =  formatSeconds(v.toInteger())
                 case 'state':
-                case 'level':
-	                if (logEnable) log.debug "** sendEvent ${DPSMAP[k]['code']} = ${v}"
-    	            sendEvent(name: DPSMAP[k]['code'], value : v)
+	                if (v == 'Standby') makeEvent('switch','off')
+                	makeEvent(code,v)
                 break
 
                 case "temp_current_f":
                 // Send temperature value events when towel warmer switch is on
-                if (device.currentValue('switch')) {
-                    if (logEnable) log.debug "** sendEvent temperature = ${state.units}"
-                    sendEvent(name: "temperature", value : v, unit: "${state.units}")
+                if (device.currentValue('switch')=='on') {
+                    makeEvent('temperature',v,state.units)
                 } else {
                     // Only send temperature value events by units of 5 when towel warmer switch is off (Cooling Down or in Standby)
                     if (device.currentValue('temperature').toInteger()-DELTA_TEMPERATURE > v.toInteger()) {
-                        if (logEnable) log.debug "** sendEvent temperature = ${v}°F"
-                        sendEvent(name: "temperature", value : v, unit: "${state.units}")
+	                    makeEvent('temperature',v,state.units)
                     }
                 }
                 break
-
+				// Ignored events
                 default:
-                    if (logEnable) log.debug ">> Ignoring ${DPSMAP[k]['code']} = ${v}"
+                    logTrace  getFormat('text-blue',">> Ignored event: ${code} => ${v}")
                     break
             }
         }
     }
 }
 
-public static String formatSeconds(int timeInSeconds)
-{
-    int hours = timeInSeconds / 3600;
-    int secondsLeft = timeInSeconds - hours * 3600;
-    int minutes = secondsLeft / 60;
-    int seconds = secondsLeft - minutes * 60;
-
-    String formattedTime = "";
-    if (hours < 10)
-        formattedTime += "0";
-    formattedTime += hours + ":";
-
-    if (minutes < 10)
-        formattedTime += "0";
-    formattedTime += minutes + ":";
-
-    if (seconds < 10)
-        formattedTime += "0";
-    formattedTime += seconds ;
-
-    return formattedTime;
+void makeEvent(theName, theValue, theUnit='', theDescription='') {
+    def dataMap = [name: thename, value: theValue]
+    if (theUnits) dataMap.add(units: theUnits)
+    if (theDescription) dataMap.add(description: theDescription)
+	sendEvent(dataMap)
+	logDebug getFormat('text-red',"** <b>sendEvent</b> ${theName} = ${theValue}${theUnit} ${theDescription}")
 }
 
+def help() {
+    section("${getImage('instructions')} <b>${app.name} Online Documentation</b>", hideable: true, hidden: true) {
+        paragraph "<a href='${GITHUB_LINK}#readme' target='_blank'><h4 style='color:DodgerBlue;'>Click this link to view Online Documentation for ${app.name}</h4></a>"
+    }
+}
+
+String fmtHelpInfo(String str) {
+    String info = "${PARENT_DEVICE_NAME} v${VERSION}"
+    String prefLink = "<a href='${COMM_LINK}' target='_blank'>${str}<br><div style='font-size: 70%;'>${info}</div></a>"
+    String topStyle = "style='font-size: 18px; padding: 1px 12px; border: 2px solid Crimson; border-radius: 6px;'" //SlateGray
+    String topLink = "<a ${topStyle} href='${COMM_LINK}' target='_blank'>${str}<br><div style='font-size: 14px;'>${info}</div></a>"
+    if (device) {
+        return "<div style='font-size: 160%; font-style: bold; padding: 2px 0px; text-align: center;'>${prefLink}</div>" +
+            "<div style='text-align: center; position: absolute; top: 46px; right: 60px; padding: 0px;'><ul class='nav'><li>${topLink}</ul></li></div>"
+    } else {
+        return "<div style='text-align: center; position: absolue; top: 0px; right: 80px; padding: 0px;'><ul class='nav'><li>${topLink}</ul></li></div>"
+
+    }
+}
 
 // **************************************************************************************************
 // **************************************************************************************************
@@ -312,7 +314,7 @@ import groovy.transform.Field
 // Callback function used by HE to notify about socket changes
 // This has been reported to be buggy
 def socketStatus(String socketMessage) {
-	if(logEnable) log.info "Socket status message received: " + socketMessage
+	logInfo "Socket status message received: " + socketMessage
 
 	if (socketMessage == "send error: Broken pipe (Write failed)") {
 		unschedule(heartbeat)
@@ -335,7 +337,7 @@ def socketStatus(String socketMessage) {
 
 boolean socket_connect() {
 
-	if (logTrace) log.trace "Socket connect: $settings.ipaddress at port: 6668"
+	logTrace  "Socket connect: $settings.ipaddress at port: 6668"
 
 	boolean returnStatus = true
 
@@ -360,7 +362,7 @@ boolean socket_connect() {
 def socket_write(byte[] message) {
 	String msg = hubitat.helper.HexUtils.byteArrayToHexString(message)
 
-	if (logTrace) log.trace "Socket: write - " + settings.ipaddress + ":" + 6668 + " msg: " + msg
+	logTrace  "Socket: write - " + settings.ipaddress + ":" + 6668 + " msg: " + msg
 
 	try {
 		interfaces.rawSocket.sendMessage(msg)
@@ -370,7 +372,7 @@ def socket_write(byte[] message) {
 }
 
 def socket_close(boolean willTryToReconnect=false) {
-	if (logTrace) log.trace "Socket: close"
+	logTrace  "Socket: close"
 
 	unschedule(sendTimeout)
 
@@ -397,7 +399,7 @@ def send(String command, Map message=null) {
 	boolean sessionState = state.HaveSession
 
 	if (sessionState == false) {
-		if (logTrace) log.trace "No session, creating new session"
+		logTrace  "No session, creating new session"
 		sessionState = get_session(settings.tuyaProtVersion)
 	}
 
@@ -421,7 +423,6 @@ def sendAll() {
 
 def sendTimeout() {
 	if (state.retry > 0) {
-		if (logEnable) log.warn "No response from device, retrying..."
 		state.retry = state.retry - 1
 		sendAll()
 	} else {
@@ -456,11 +457,11 @@ def DriverSelfTestReport(testName, byte[] generated, String expected) {
 
 	sendEvent(name: "DriverSelfTest_$testName", value: "N/A")
 
-	if (logTrace) log.trace "Generated " + hubitat.helper.HexUtils.byteArrayToHexString(generated)
-	if (logTrace) log.trace "Expected " + expected
+	logTrace  "Generated " + hubitat.helper.HexUtils.byteArrayToHexString(generated)
+	logTrace  "Expected " + expected
 
 	if (hubitat.helper.HexUtils.byteArrayToHexString(generated) == expected) {
-		log.info "$testName: Test passed"
+		logInfo "$testName: Test passed"
 		sendEvent(name: "DriverSelfTest_$testName", value: "OK")
 		retValue = true
 	} else {
@@ -476,11 +477,11 @@ def DriverSelfTestReport(testName, generated, expected) {
 
 	sendEvent(name: "DriverSelfTest_$testName", value: "N/A")
 
-	if (logTrace) log.trace "Generated " + generated
-	if (logTrace) log.trace "Expected " + expected
+	logTrace  "Generated " + generated
+	logTrace  "Expected " + expected
 
 	if (generated == expected) {
-		if (logTrace) log.trace "$testName: Test passed"
+		logTrace  "$testName: Test passed"
 		sendEvent(name: "DriverSelfTest_$testName", value: "OK")
 		retValue = true
 	} else {
@@ -492,7 +493,7 @@ def DriverSelfTestReport(testName, generated, expected) {
 }
 
 def DriverSelfTest() {
-	log.info "********** Starting driver self test *******************"
+	logInfo "********** Starting driver self test *******************"
 
 	state.clear()
 	// Need to make sure to have this variable
@@ -587,7 +588,7 @@ def getFrameTypeId(String name) {
 ]
 
 List _parseTuya(String message) {
-	if (logTrace) log.trace "Using new parser on message: " + message
+	logTrace  "Using new parser on message: " + message
 
 	unschedule(sendTimeout)
 
@@ -606,7 +607,7 @@ List _parseTuya(String message) {
 		location = index + 1
 
 		if (index != -1) {
-			if (logTrace) log.trace "Found \"$start\" at: $index"
+			logTrace  "Found \"$start\" at: $index"
 			// Later we handle incoming data as byte array, and incoming data is bytes represented as hex
 			startIndexes.add(index/2)
 		} else {
@@ -621,7 +622,7 @@ List _parseTuya(String message) {
 		}
 	}
 
-	if (logTrace) log.trace "Found starts on: $startIndexes"
+	logTrace  "Found starts on: $startIndexes"
 
 	byte[] incomingData = hubitat.helper.HexUtils.hexStringToByteArray(message)
 
@@ -642,10 +643,10 @@ Map decodeIncomingFrame(byte[] incomingData, Integer sofIndex=0, byte[] testKey=
 	def frameType = Byte.toUnsignedInt(incomingData[sofIndex + 11])
 	Integer frameLength = Byte.toUnsignedInt(incomingData[sofIndex + 15])
 
-	if (logTrace) log.trace("Frame with SOFindex: $sofIndex, is sequence: $frameSequence, and message type: $frameType with length: $frameLength")
+	logTrace ("Frame with SOFindex: $sofIndex, is sequence: $frameSequence, and message type: $frameType with length: $frameLength")
 
 	if (frameTypes.containsKey(frameType)) {
-		if (logTrace) log.trace "Frame types is known, key: $frameType name: ${frameTypes[frameType]}"
+		logTrace  "Frame types is known, key: $frameType name: ${frameTypes[frameType]}"
 	} else {
 		log.warn "Unknown frame type, key: $frameType"
 		return
@@ -666,7 +667,7 @@ Map decodeIncomingFrame(byte[] incomingData, Integer sofIndex=0, byte[] testKey=
 
 	switch (frameTypes[frameType]) {
 		case "KEY_RESP":
-			if (logTrace) log.trace "This is a key negotation response"
+			logTrace  "This is a key negotation response"
 			payloadStart = 20
 			payloadLength = frameLength - checksumSize - 4 - 4
 			useKey = getRealLocalKey()
@@ -715,22 +716,34 @@ Map decodeIncomingFrame(byte[] incomingData, Integer sofIndex=0, byte[] testKey=
 	if (incomingData[sofIndex + payloadStart] == '{') {
 		// Incoming data is plain text
 		plainTextMessage = new String(incomingData, "UTF-8")[(sofIndex + payloadStart)..(sofIndex + payloadStart + payloadLength - 1)]
-		if (logTrace) log.trace "Unencrypted message: $plainTextMessage"
+		logTrace  "Unencrypted message: $plainTextMessage"
 	} else {
 		// Incoming data is encrypted
 		plainTextMessage = decryptPayload(incomingData as byte[], useKey, sofIndex + payloadStart, payloadLength)
-		if (logTrace) log.trace "Decrypted message: " + plainTextMessage
+		logTrace  "Decrypted message: " + plainTextMessage
 	}
+    if (plainTextMessage) logTrace "==> plainTextMessage= ${plainTextMessage}"
 
 	Object status = [:]
+    def start
 
     // Check if incoming message is a JSON object
     if (plainTextMessage.indexOf('dps') != -1) {
-        if (logTrace) log.trace "Found JSON object in string"
+        def searchString = '{"protocol"'
+		logTrace  "==> searchString= ${searchString}"
+        start = (plainTextMessage.indexOf(searchString) > -1)?plainTextMessage.indexOf(searchString):plainTextMessage.indexOf('{')
+        logTrace "Found DPS JSON object in '${plainTextMessage}' starting at position ${start}: '${plainTextMessage.substring(start)}'"
         def jsonSlurper = new groovy.json.JsonSlurper()
-        status = jsonSlurper.parseText(plainTextMessage.substring(plainTextMessage.indexOf('{')))
+        try {
+            status = jsonSlurper.parseText(plainTextMessage.substring(start))
+            logTrace "status = ${status}"
+//            status = jsonSlurper.parseText(plainTextMessage.substring(plainTextMessage.indexOf('{')))
+        } catch (Exception ex) {
+            log.error "plainTextMessage.parseText() is invalid for '${plainTextMessage}'"
+            return
+            }
     } else {
-        if (logTrace) log.trace "Did not find a JSON object in string"
+        logTrace  "Did not find a JSON object in string"
     }
 
 	// Post process the incoming payload
@@ -776,16 +789,16 @@ Map decodeIncomingFrame(byte[] incomingData, Integer sofIndex=0, byte[] testKey=
 			break
 	}
 
-	if (logTrace) log.trace "JSON object: $status"
-	if (logTrace) log.trace "DPS object: " + status
+	logTrace  "JSON object: $status"
+	logTrace  "DPS object: " + status
 
 	if (callback != null) {
 		callback(status)
 	}
 
-	// For debugging
-	if (logTrace && status != null && status != [:]) {
-		sendEvent(name: "rawMessage", value: status.dps)
+	// For Tracing message issues
+	if (status != null && status != [:]) {
+        logTrace "rawMessage → value: ${status.dps}"
 	}
 
 	return status
@@ -800,7 +813,7 @@ def decryptPayload(byte[] data, byte[] key, start, length) {
 
 	byte[] payloadByteArray = payloadStream.toByteArray()
 
-	if (logTrace) log.trace "Payload for decrypt [$start..$length]: " + hubitat.helper.HexUtils.byteArrayToHexString(payloadByteArray)
+	logTrace  "Payload for decrypt [$start..$length]: " + hubitat.helper.HexUtils.byteArrayToHexString(payloadByteArray)
 
 	// Protocol version 3.1 uses base64 conversion
 	boolean useB64 = settings.tuyaProtVersion == "31" ? true : false
@@ -818,11 +831,11 @@ def decodeIncomingKeyResponse(String incomingData, byte[] useKey=getRealLocalKey
 	sha256HMAC.update(remoteNonce, 0, remoteNonce.size())
 	byte[] digest = sha256HMAC.doFinal()
 
-	if (logTrace) log.trace "Calculated key negotiation answer payload: " + hubitat.helper.HexUtils.byteArrayToHexString(digest)
+	logTrace  "Calculated key negotiation answer payload: " + hubitat.helper.HexUtils.byteArrayToHexString(digest)
 
 	byte[] message = generateGeneralMessageV3_4(digest, getFrameTypeId("KEY_FINAL"), useKey, useMsgSequence)
 
-	if (logTrace) log.trace "message to send: " + hubitat.helper.HexUtils.byteArrayToHexString(message)
+	logTrace  "message to send: " + hubitat.helper.HexUtils.byteArrayToHexString(message)
 
 	return [message, remoteNonce]
 }
@@ -840,15 +853,15 @@ def calculateSessionKey(byte[] remoteNonce, String useLocalNonce=null, byte[] ke
 		i++
 	}
 
-	if (logTrace) log.trace "XOR'd keys: " + hubitat.helper.HexUtils.byteArrayToHexString(calKey)
+	logTrace  "XOR'd keys: " + hubitat.helper.HexUtils.byteArrayToHexString(calKey)
 
 	sessKeyHEXString = encrypt(calKey, key, false)
 
 	byte[] sessKeyByteArray = hubitat.helper.HexUtils.hexStringToByteArray(sessKeyHEXString[0..31])
 
-	if (logTrace) log.trace "Session key: " + hubitat.helper.HexUtils.byteArrayToHexString(sessKeyByteArray)
+	logTrace  "Session key: " + hubitat.helper.HexUtils.byteArrayToHexString(sessKeyByteArray)
 
-	if (logTrace) log.trace "********************** DONE  SESSION KEY NEGOTIATION **********************"
+	logTrace  "********************** DONE  SESSION KEY NEGOTIATION **********************"
 
 	return sessKeyByteArray
 }
@@ -882,8 +895,8 @@ def generate_payload(String command, def data=null, String timestamp=null, byte[
 		localkey = state.sessionKey
 	}
 
-	if (logTrace) log.trace "Using key: " + new String(localkey as byte[], "UTF-8")
-	if (logTrace) log.trace "Using key: " + hubitat.helper.HexUtils.byteArrayToHexString(localkey as byte[])
+	logTrace  "Using key: " + new String(localkey as byte[], "UTF-8")
+	logTrace  "Using key: " + hubitat.helper.HexUtils.byteArrayToHexString(localkey as byte[])
 
 	json_data = payload()[payloadFormat][command]["command"]
 
@@ -921,7 +934,7 @@ def generate_payload(String command, def data=null, String timestamp=null, byte[
 	json_payload = json_payload.replaceFirst("\"", "")
 	json_payload = json_payload[0..-2]
 
-	if (logTrace) log.trace "payload before=" + json_payload
+	logTrace  "payload before=" + json_payload
 
 	// Contruct payload, sometimes encrypted, sometimes clear text, and a mix. Depending on the protocol version
 	ByteArrayOutputStream contructed_payload = new ByteArrayOutputStream()
@@ -930,9 +943,9 @@ def generate_payload(String command, def data=null, String timestamp=null, byte[
 		if (command != "status") {
 			encrypted_payload = encrypt(json_payload, localkey)
 
-			if (logTrace) log.trace "Encrypted payload: " + hubitat.helper.HexUtils.byteArrayToHexString(encrypted_payload.getBytes())
+			logTrace  "Encrypted payload: " + hubitat.helper.HexUtils.byteArrayToHexString(encrypted_payload.getBytes())
 			preMd5String = "data=" + encrypted_payload + "||lpv=" + "3.1" + "||" + new String(localkey, "UTF-8")
-			if (logTrace) log.trace "preMd5String" + preMd5String
+			logTrace  "preMd5String" + preMd5String
 			hexdigest = generateMD5(preMd5String)
 			hexdig = new String(hexdigest[8..-9].getBytes("UTF-8"), "ISO-8859-1")
 			json_payload = "3.1" + hexdig + encrypted_payload
@@ -942,7 +955,7 @@ def generate_payload(String command, def data=null, String timestamp=null, byte[
 	} else if (tuyaVersion == "33") {
 		encrypted_payload = encrypt(json_payload, localkey as byte[], false)
 
-		if (logTrace) log.trace encrypted_payload
+		logTrace  encrypted_payload
 
 		if (command != "status" && command != "nb") {
 			contructed_payload.write("3.3\0\0\0\0\0\0\0\0\0\0\0\0".getBytes())
@@ -959,7 +972,7 @@ def generate_payload(String command, def data=null, String timestamp=null, byte[
 		contructed_payload.write(hubitat.helper.HexUtils.hexStringToByteArray(encrypted_payload))
 	}
 
-	if (logTrace) log.trace "payload after=" + json_payload
+	logTrace  "payload after=" + json_payload
 
 	byte[] final_payload = contructed_payload.toByteArray()
 
@@ -972,9 +985,9 @@ def generate_payload(String command, def data=null, String timestamp=null, byte[
 		payload_len = payload_len + 32 // for HMAC (SHA-256) storage
 	}
 
-	if (logTrace) log.trace payload_len
+    logTrace "${payload_len}"
 
-	//log.info hubitat.helper.HexUtils.byteArrayToHexString(generateGeneralMessageV3_4(json_payload, 1, 3))
+	//logInfo hubitat.helper.HexUtils.byteArrayToHexString(generateGeneralMessageV3_4(json_payload, 1, 3))
 
 	Short msgSequence = useMsgSequence==null ? getNewMessageSequence() : useMsgSequence
 
@@ -992,7 +1005,7 @@ def generate_payload(String command, def data=null, String timestamp=null, byte[
 	byte[] buf = output.toByteArray()
 
 	if (tuyaVersion == "34") {
-		if (logTrace) log.trace "Using HMAC (SHA-256) as checksum"
+		logTrace  "Using HMAC (SHA-256) as checksum"
 
 		Mac sha256_hmac = Mac.getInstance("HmacSHA256")
 		SecretKeySpec key = new SecretKeySpec(localkey as byte[], "HmacSHA256")
@@ -1001,18 +1014,18 @@ def generate_payload(String command, def data=null, String timestamp=null, byte[
 		sha256_hmac.update(buf, 0, buf.size())
 		byte[] digest = sha256_hmac.doFinal()
 
-		if (logTrace) log.trace("message HMAC SHA256: " + hubitat.helper.HexUtils.byteArrayToHexString(digest))
+		logTrace ("message HMAC SHA256: " + hubitat.helper.HexUtils.byteArrayToHexString(digest))
 
 		output.write(digest)
 	} else {
-		if (logEnable) log.info "Using CRC32 as checksum"
+		logInfo "Using CRC32 as checksum"
 
 		crc32 = CRC32b(buf, buf.size()) & 0xffffffff
-		if (logTrace) log.trace buf.size()
+		logTrace  buf.size()
 
 		hex_crc = Long.toHexString(crc32)
 
-		if (logTrace) log.trace "HEX crc: $hex_crc : " + hex_crc.size()/2
+		logTrace  "HEX crc: $hex_crc : " + hex_crc.size()/2
 
 		// Pad the CRC in case highest byte is 0
 		if (hex_crc.size() < 7) {
@@ -1097,15 +1110,15 @@ String getLocalNonce() {
 byte[] generateKeyStartMessage(String useLocalNonce=null, byte[] useKey=getRealLocalKey(), Short useMsgSequence=null) {
 	payloadFormat = "v3.4"
 
-	if (logTrace) log.trace("********************** START SESSION KEY NEGOTIATION **********************")
+	logTrace ("********************** START SESSION KEY NEGOTIATION **********************")
 
 	payload = useLocalNonce==null? getLocalNonce() : useLocalNonce
 
-	if (logTrace) log.trace "Payload (local nonce): $payload"
+	logTrace  "Payload (local nonce): $payload"
 
 	encrypted_payload = encrypt(payload, useKey, false)
 
-	if (logTrace) log.trace("Payload (local nonce) encrypted: " + encrypted_payload)
+	logTrace ("Payload (local nonce) encrypted: " + encrypted_payload)
 
 	encrypted_payload = hubitat.helper.HexUtils.hexStringToByteArray(encrypted_payload)
 
@@ -1122,7 +1135,7 @@ byte[] generateKeyStartMessage(String useLocalNonce=null, byte[] useKey=getRealL
 	packed_message.write(encrypted_payload.size() + 32 + hubitat.helper.HexUtils.hexStringToByteArray(payload()[payloadFormat]["suffix"]).size())
 	packed_message.write(encrypted_payload)
 
-	if (logTrace) log.trace hubitat.helper.HexUtils.byteArrayToHexString(packed_message.toByteArray())
+	logTrace  hubitat.helper.HexUtils.byteArrayToHexString(packed_message.toByteArray())
 
 	Mac sha256_hmac = Mac.getInstance("HmacSHA256")
 	SecretKeySpec key = new SecretKeySpec(useKey, "HmacSHA256")
@@ -1134,7 +1147,7 @@ byte[] generateKeyStartMessage(String useLocalNonce=null, byte[] useKey=getRealL
 	packed_message.write(digest)
 	packed_message.write(hubitat.helper.HexUtils.hexStringToByteArray(payload()[payloadFormat]["suffix"]))
 
-	if (logTrace) log.trace hubitat.helper.HexUtils.byteArrayToHexString(packed_message.toByteArray())
+	logTrace  hubitat.helper.HexUtils.byteArrayToHexString(packed_message.toByteArray())
 
 	packed_message.toByteArray()
 }
@@ -1144,7 +1157,7 @@ def generateGeneralMessageV3_4(byte[] data, Integer cmd, byte[] useKey=getRealLo
 
 	encrypted_payload = encrypt(data, useKey, false)
 
-	if (logTrace) log.trace("payload encrypted: " + encrypted_payload)
+	logTrace ("payload encrypted: " + encrypted_payload)
 
 	encrypted_payload = hubitat.helper.HexUtils.hexStringToByteArray(encrypted_payload)
 
@@ -1161,7 +1174,7 @@ def generateGeneralMessageV3_4(byte[] data, Integer cmd, byte[] useKey=getRealLo
 	packed_message.write(encrypted_payload.size() + 32 + hubitat.helper.HexUtils.hexStringToByteArray(payload()[payloadFormat]["suffix"]).size())
 	packed_message.write(encrypted_payload)
 
-	if (logTrace) log.trace hubitat.helper.HexUtils.byteArrayToHexString(packed_message.toByteArray())
+	logTrace  hubitat.helper.HexUtils.byteArrayToHexString(packed_message.toByteArray())
 
 	Mac sha256_hmac = Mac.getInstance("HmacSHA256")
 	SecretKeySpec keySpec = new SecretKeySpec(useKey, "HmacSHA256")
@@ -1173,7 +1186,7 @@ def generateGeneralMessageV3_4(byte[] data, Integer cmd, byte[] useKey=getRealLo
 	packed_message.write(digest)
 	packed_message.write(hubitat.helper.HexUtils.hexStringToByteArray(payload()[payloadFormat]["suffix"]))
 
-	if (logTrace) log.trace hubitat.helper.HexUtils.byteArrayToHexString(packed_message.toByteArray())
+	logTrace  hubitat.helper.HexUtils.byteArrayToHexString(packed_message.toByteArray())
 
 	packed_message.toByteArray()
 }
@@ -1256,7 +1269,7 @@ def encrypt (def plainText, byte[] secret, encodeB64=true) {
 
 // Decrypt ByteArray
 def decrypt_bytes (byte[] cypherBytes, def secret, decodeB64=false) {
-	if (logTrace) log.trace "*********** Decrypting **************"
+	logTrace  "*********** Decrypting **************"
 
 
 	def cipher = Cipher.getInstance("AES/ECB/PKCS5Padding ")
