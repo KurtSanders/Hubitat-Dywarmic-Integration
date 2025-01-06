@@ -17,9 +17,6 @@
  * limitations under the License.
  */
 
-import groovy.transform.Field
-import java.text.SimpleDateFormat
-import groovy.json.*
 #include kurtsanders.SanderSoft-Library
 
 metadata {
@@ -41,27 +38,27 @@ definition(name: PARENT_DEVICE_NAME,
     attribute "polling", "boolean"
 
         command "Disconnect"
-        command "SendCustomJSONObject", [[name:"jsonPayload*", type: "STRING", description:"Format: {\"1\":true, \"12\":\"cancel\"}"]]
-        command "SendCustomDataToDevice", [[name:"endpoint*", type:"NUMBER", description:"To which endpint(dps) do you want the data to be sent"], [name:"data*", type:"STRING", description:"the data to be sent, treated as string, but true and false is converted"]]
         command "setCountdownTimer", [[name: "Count Down Timer Units (mins)*", type:"ENUM", description:"Sets the Count Down Timer [mins]", constraints:SPA_COUNTDOWNTIMERLIST]]
         command "setFeature", [
             [name: "Feature*", type:"ENUM", description:"Feature", constraints:FEATURES],
             [name: "Value*", type:"ENUM", description:"Value", constraints:ONOFF],
         ]
+        command "SendCustomJSONObject", [[name:"jsonPayload*", type: "STRING", description:"Format: {\"1\":true, \"12\":\"cancel\"}"]]
+        command "SendCustomDataToDevice", [[name:"endpoint*", type:"NUMBER", description:"To which endpint(dps) do you want the data to be sent"], [name:"data*", type:"STRING", description:"the data to be sent, treated as string, but true and false is converted"]]
     }
 }
 
 // Variable Constants
-@Field static String PARENT_DEVICE_NAME            = "Dywarmic Towel Warmer"
-@Field static String AUTHOR_NAME                   = "Kurt Sanders"
-@Field static String NAMESPACE                     = "kurtsanders"
+@Field static final String PARENT_DEVICE_NAME      = "Dywarmic Towel Warmer"
+@Field static final String AUTHOR_NAME             = "Kurt Sanders"
+@Field static final String NAMESPACE               = "kurtsanders"
 @Field static final String VERSION 				   = "0.0.1"
-@Field static final String COMM_LINK               = "https://community.hubitat.com/t/release-hb-bwa-spamanager-app/128842"
+@Field static final String COMM_LINK               = "https://community.hubitat.com/"
 @Field static final String GITHUB_LINK             = "https://github.com/KurtSanders/Hubitat-Dywarmic-Integration/"
 @Field static final Map SPA_COUNTDOWNTIMERLIST     = ["1h":'20',"2h":'40',"3h":'60',"4h":'80',"5h":'100',"6h":'120',"cancel":"cancel"]
 @Field static final List ONOFF                     = ["on", "off"]
 @Field static final Map FEATURES                   = ["8":"light","7":"child_lock","6":"eco"]
-@Field static final Map TEMP_REPORTING_DELTA       = [1:"1°",2:"2°",3:"3°",4:"4°",5:"5°"]
+@Field static final Map TEMP_REPORTING_DELTA       = [1:"± 1°",2:"± 2°",3:"± 3°",4:"± 4°",5:"± 5°"]
 
 
 preferences {
@@ -73,7 +70,7 @@ preferences {
     input name: "poll_interval", type: "enum", title: "Configure poll interval:", defaultValue: 0, options: [0: "No polling", 1:"Every 1 second", 2:"Every 2 second", 3: "Every 3 second", 5: "Every 5 second", 10: "Every 10 second", 15: "Every 15 second", 20: "Every 20 second", 30: "Every 30 second", 60: "Every 1 min", 120: "Every 2 min", 180: "Every 3 min"], description: "<small>Old way of reading status of the deivce. Use \"No polling\" when auto reconnect or heart beat is enabled.</small>"
     input name: "autoReconnect", type: "bool", title: "Auto reconnect on socket close", defaultValue: true, description: "<small>A communication channel is kept open between HE and the tuya device. Every 30 s the socket is closed and re-opened. This is useful if the device is a switch, or is also being controlled from external apps like Smart Life etc. For <b>3.4</b> it is also smart to enable the Use heart beat method to reduce data traffic.</small>"
     input name: "heartBeatMethod", type: "bool", title: "Use heart beat method to keep connection alive", defaultValue: true, description: "<small>Use a heart beat to keep the connection alive, i.e. a message is sent every 20 seconds to the device, the causes less data traffic on <b>3.4</b> devices as sessions don't have to be negotiated all the time.</small>"
-    input name: "tempReportingInterval", type: "enum",  defaultValue: 5, options: TEMP_REPORTING_DELTA, required: true, title: "Reduce hub 'current temperature' events by <b>only</b> posting every delta X° units"
+    input name: "tempReportingInterval", type: "enum",  defaultValue: 5, options: TEMP_REPORTING_DELTA, required: true, title: "Reduce frequent hub 'current temperature' events by <b>only</b> posting every ± delta N° units."
 
     //Logging Options
     input name: "logLevel", type: "enum", title: fmtTitle("Logging Level"),
@@ -430,7 +427,7 @@ def sendTimeout() {
 		state.retry = state.retry - 1
 		sendAll()
 	} else {
-		log.error "No answer from device after 5 retries"
+		logError "No answer from device after 5 retries"
 		socket_close()
 	}
 }
@@ -652,7 +649,7 @@ Map decodeIncomingFrame(byte[] incomingData, Integer sofIndex=0, byte[] testKey=
 	if (frameTypes.containsKey(frameType)) {
 		logTrace  "Frame types is known, key: $frameType name: ${frameTypes[frameType]}"
 	} else {
-		log.warn "Unknown frame type, key: $frameType"
+		logWarn "Unknown frame type, key: $frameType"
 		return
 	}
 
