@@ -58,7 +58,7 @@ definition(name: PARENT_DEVICE_NAME,
 @Field static final Map SPA_COUNTDOWNTIMERLIST     = ["1h":'20',"2h":'40',"3h":'60',"4h":'80',"5h":'100',"6h":'120',"cancel":"cancel"]
 @Field static final List ONOFF                     = ["on", "off"]
 @Field static final Map FEATURES                   = ["8":"light","7":"child_lock","6":"eco"]
-@Field static final Map TEMP_REPORTING_DELTA       = [1:"± 1°",2:"± 2°",3:"± 3°",4:"± 4°",5:"± 5°"]
+@Field static final Map TEMP_REPORTING_DELTA       = [1:"± 1°",2:"± 2°",3:"± 3°",4:"± 4°",5:"± 5°",10:"± 10°"]
 
 
 preferences {
@@ -238,15 +238,15 @@ def parse(String message) {
                 	break
                 case 'state':
                 	makeEvent(code,v)
-                    makeEvent('switch',(v=='Heating')?'on':'off')
+                    if (v == 'Heating') makeEvent('switch','on')
                     break
                 case "temp_current_f":
                 // Send temperature value events only when temp_current_f is greater/less than tempReportingInterval
-                	def tempDelta = (device.currentValue('temperature').toInteger() % tempReportingInterval.toInteger())
+                	def tempDelta = (v.toInteger() % tempReportingInterval.toInteger())
                 	if (tempDelta == 0) {
                     	makeEvent('temperature', v, state.units)
                     } else {
-                        logInfo "Current towel warmer temperature is ${v}°.  This temperature value will not be posted to the hub device because it is ${tempDelta}° of ${device.currentValue('temperature')}°"
+                        logInfo "Current towel warmer temperature is ${v}°.  This temperature value will not be posted to the hub device because it is ${tempDelta}° of ${v}° (Filter = ± ${tempReportingInterval}°)"
                     }
                 	break
 
