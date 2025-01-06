@@ -29,9 +29,9 @@ definition(name: PARENT_DEVICE_NAME,
        	importUrl: "",
        	singleThreaded: true) {
     capability "Actuator"
+    capability 'Refresh'
     capability "Switch"
     capability 'TemperatureMeasurement'
-    capability 'Refresh'
 
     attribute "countdown_left", "number"
     attribute "light", "string"
@@ -59,9 +59,10 @@ definition(name: PARENT_DEVICE_NAME,
 @Field static final String COMM_LINK               = "https://community.hubitat.com/t/release-hb-bwa-spamanager-app/128842"
 @Field static final String GITHUB_LINK             = "https://github.com/KurtSanders/Hubitat-Dywarmic-Integration/"
 @Field static final Map SPA_COUNTDOWNTIMERLIST     = ["1h":'20',"2h":'40',"3h":'60',"4h":'80',"5h":'100',"6h":'120',"cancel":"cancel"]
-@Field static final Integer DELTA_TEMPERATURE      = 5
 @Field static final List ONOFF                     = ["on", "off"]
 @Field static final Map FEATURES                   = ["8":"light","7":"child_lock","6":"eco"]
+@Field static final Map TEMP_REPORTING_DELTA       = [1:"1°",2:"2°",3:"3°",4:"4°",5:"5°"]
+
 
 preferences {
     input "ipaddress", "text", title: "Device IP:", required: true, description: "<small>tuya device local IP address. Found by using tools like tinytuya. Tip: configure a fixed IP address for your tuya device on your network to make sure the IP does not change over time.</small>"
@@ -72,6 +73,7 @@ preferences {
     input name: "poll_interval", type: "enum", title: "Configure poll interval:", defaultValue: 0, options: [0: "No polling", 1:"Every 1 second", 2:"Every 2 second", 3: "Every 3 second", 5: "Every 5 second", 10: "Every 10 second", 15: "Every 15 second", 20: "Every 20 second", 30: "Every 30 second", 60: "Every 1 min", 120: "Every 2 min", 180: "Every 3 min"], description: "<small>Old way of reading status of the deivce. Use \"No polling\" when auto reconnect or heart beat is enabled.</small>"
     input name: "autoReconnect", type: "bool", title: "Auto reconnect on socket close", defaultValue: true, description: "<small>A communication channel is kept open between HE and the tuya device. Every 30 s the socket is closed and re-opened. This is useful if the device is a switch, or is also being controlled from external apps like Smart Life etc. For <b>3.4</b> it is also smart to enable the Use heart beat method to reduce data traffic.</small>"
     input name: "heartBeatMethod", type: "bool", title: "Use heart beat method to keep connection alive", defaultValue: true, description: "<small>Use a heart beat to keep the connection alive, i.e. a message is sent every 20 seconds to the device, the causes less data traffic on <b>3.4</b> devices as sessions don't have to be negotiated all the time.</small>"
+    input name: "tempReportingInterval", type: "enum",  defaultValue: 5, options: TEMP_REPORTING_DELTA, required: true, title: "Reduce hub 'current temperature' events by <b>only</b> posting every delta X° units"
 
     //Logging Options
     input name: "logLevel", type: "enum", title: fmtTitle("Logging Level"),
@@ -86,11 +88,13 @@ void installed() {
     setLogLevel("Debug", "30 Minutes")
     logInfo "Setting Inital logging level to 'Debug' for 30 minutes"
     state.units = location.temperatureScale
+    device.updateSetting('tempReportingInterval', [type: "enum", value: 5])
     updated()
 }
 
 void updated() {
 	logInfo "Preferences Updated..."
+	log.debug "==> tempReportingInterval= ${device.currentValue('temperature').toInteger() % tempReportingInterval.toInteger()}"
 	if ([ipaddress,devId,localKey].contains(null) || [ipaddress,devId,localKey].contains("")) {
 		log.error "One or more of the device preference required inputs, (eg. ipaddress, devId or localKey) are blank/empty, exiting..."
 		return
@@ -123,14 +127,14 @@ void refresh() {
 
 void on() {
 	logTrace ("on()")
-    sendEvent(name: 'switch', value : 'on')
+//    sendEvent(name: 'switch', value : 'on')
 	state.statePayload[1] = true
 	runInMillis(250, 'sendSetMessage')
 }
 
 void off() {
 	logTrace ("off()")
-    sendEvent(name: 'switch', value : 'off')
+//    sendEvent(name: 'switch', value : 'off')
 	state.statePayload[1] = false
 	runInMillis(250, 'sendSetMessage')
 }
@@ -227,29 +231,29 @@ def parse(String message) {
                 	makeEvent(code,v)
                 	break
                 case 'temp_unit_convert':
-	                if (device.currentValue('switch')=='off') break
-	                v= "°${v.toUpperCase()}"
-	                state.units = v
-                	makeEvent(code,v)
+                    if (device.currentValue('switch')=='on') {
+                            v= "°${v.toUpperCase()}"
+                            state.units = "°${v.toUpperCase()}"
+                            makeEvent(code,v.toUpperCase())
+                    }
                 	break
                 case 'countdown_left':
-	                v =  formatSeconds(v.toInteger())
+                	makeEvent(code,formatSeconds(v.toInteger()))
+                	break
                 case 'state':
-	                if (v == 'Standby') makeEvent('switch','off')
                 	makeEvent(code,v)
-                break
-
+                    makeEvent('switch',(v=='Heating')?'on':'off')
+                    break
                 case "temp_current_f":
-                // Send temperature value events when towel warmer switch is on
-                if (device.currentValue('switch')=='on') {
-                    makeEvent('temperature',v,state.units)
-                } else {
-                    // Only send temperature value events by units of 5 when towel warmer switch is off (Cooling Down or in Standby)
-                    if (device.currentValue('temperature').toInteger()-DELTA_TEMPERATURE > v.toInteger()) {
-	                    makeEvent('temperature',v,state.units)
+                // Send temperature value events only when temp_current_f is greater/less than tempReportingInterval
+                	def tempDelta = (device.currentValue('temperature').toInteger() % tempReportingInterval.toInteger())
+                	if (tempDelta == 0) {
+                    	makeEvent('temperature', v, state.units)
+                    } else {
+                        logInfo "Current towel warmer temperature is ${v}°.  This temperature value will not be posted to the hub device because it is ${tempDelta}° of ${device.currentValue('temperature')}°"
                     }
-                }
-                break
+                	break
+
 				// Ignored events
                 default:
                     logTrace  getFormat('text-blue',">> Ignored event: ${code} => ${v}")
@@ -260,7 +264,7 @@ def parse(String message) {
 }
 
 void makeEvent(theName, theValue, theUnit='', theDescription='') {
-    def dataMap = [name: thename, value: theValue]
+    def dataMap = [name: theName, value: theValue]
     if (theUnits) dataMap.add(units: theUnits)
     if (theDescription) dataMap.add(description: theDescription)
 	sendEvent(dataMap)
