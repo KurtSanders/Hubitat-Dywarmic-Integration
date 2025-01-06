@@ -4,11 +4,21 @@
     "version": "0.0.1",
     "minimumHEVersion": "2.4.0.143",
     "payPalUrl": "https://www.paypal.com/donate/?hosted_button_id=E4WXT86RTPXDC",
-    "dateReleased": "2025-01-01",
+    "dateReleased": "2025-01-06",
     "gitHubUrl": "https://github.com/KurtSanders/Hubitat-Dywarmic-Integration/tree/main?tab=readme-ov-file#hubitat-dywarmic-integration",
     "documentationLink": "https://github.com/KurtSanders/Hubitat-Dywarmic-Integration/tree/main?tab=readme-ov-file#hubitat-dywarmic-integration",
     "licenseFile": "https://raw.githubusercontent.com/KurtSanders/Hubitat-Dywarmic-Integration/refs/heads/main/LICENSE",
     "releaseNotes": "• Integrates a Dywarmic Towel Warmer device to Hubitat.\n\n• This integration utilizes the tuya API to access a Dywarmic towel warmer on the local network, i.e. not via the tuya cloud servers, to control and read status from devices.\n\n• This driver supports both 3.1-3.4 versions of the protocol.\n\n• This device driver requires one to create a Tuya Developer account and obtain device authenticaion creditials.\n\n• Instructions are available on Hubitat Community.",
+    "bundles": [
+        {
+            "id": "b438d8c9-c3bb-45b6-9dcd-a5f0fb931617",
+            "name": "SanderSoft Bundle",
+            "namespace": "kurtsanders",
+            "version": "0.0.4",
+            "location": "https://github.com/KurtSanders/HubitatPackages/raw/master/resources/bundles/SanderSoftBundle.zip",
+            "required": true
+        }
+    ],
     "apps": [
         {
             "id": "17874268-538b-4cb9-b2df-9cb8f6ca2256",
