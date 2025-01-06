@@ -91,7 +91,6 @@ void installed() {
 
 void updated() {
 	logInfo "Preferences Updated..."
-	log.debug "==> tempReportingInterval= ${device.currentValue('temperature').toInteger() % tempReportingInterval.toInteger()}"
 	if ([ipaddress,devId,localKey].contains(null) || [ipaddress,devId,localKey].contains("")) {
 		log.error "One or more of the device preference required inputs, (eg. ipaddress, devId or localKey) are blank/empty, exiting..."
 		return
