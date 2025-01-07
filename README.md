@@ -17,7 +17,8 @@ This Hubitat integration provides local network control and the status of the Dy
 |------|--------|
 | Hubitat local direct device API access|Local WiFi connectivity which eliminates cloud dependency|
 | Switch | * Turn On <br>* Turn Off|
-| Set Countdown Duration Timer | * Set/Cancel warming duration in intervals of 20 min increments  |
+| Set/Change Countdown Duration Timer | * Set/Cancel warming duration in intervals of 20-minute increments|
+| Set Countdown Duration Timer Default | * Set countdown duration timer default value when towel warmer is switched on|
 |Reduce hub events| * Reduce frequent 'current temperature' events by **only** creating an event to the hub every ± delta N° units.<br>* Ignore nonessential towel warmer events.|
 | Device API Debugging | * Custom Data To Device<br>* Send Custom JSON Object |
 | Set Features| * Child Lock<br>* Eco<br>* Light|
