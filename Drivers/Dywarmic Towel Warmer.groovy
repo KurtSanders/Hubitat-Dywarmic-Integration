@@ -58,7 +58,7 @@ definition(name: PARENT_DEVICE_NAME,
 @Field static final Map SPA_COUNTDOWNTIMERLIST     = ["1h":'20',"2h":'40',"3h":'60',"4h":'80',"5h":'100',"6h":'120',"cancel":"cancel"]
 @Field static final List ONOFF                     = ["on", "off"]
 @Field static final Map FEATURES                   = ["8":"light","7":"child_lock","6":"eco"]
-@Field static final Map TEMP_REPORTING_DELTA       = [1:"± 1°",2:"± 2°",3:"± 3°",4:"± 4°",5:"± 5°",10:"± 10°"]
+@Field static final Map TEMP_REPORTING_DELTA       = [(1):"± 1°",(2):"± 2°",(3):"± 3°",(4):"± 4°",(5):"± 5°",(10):"± 10°",(15):"± 15°"]
 
 
 preferences {
@@ -71,6 +71,7 @@ preferences {
     input name: "autoReconnect", type: "bool", title: "Auto reconnect on socket close", defaultValue: true, description: "<small>A communication channel is kept open between HE and the tuya device. Every 30 s the socket is closed and re-opened. This is useful if the device is a switch, or is also being controlled from external apps like Smart Life etc. For <b>3.4</b> it is also smart to enable the Use heart beat method to reduce data traffic.</small>"
     input name: "heartBeatMethod", type: "bool", title: "Use heart beat method to keep connection alive", defaultValue: true, description: "<small>Use a heart beat to keep the connection alive, i.e. a message is sent every 20 seconds to the device, the causes less data traffic on <b>3.4</b> devices as sessions don't have to be negotiated all the time.</small>"
     input name: "tempReportingInterval", type: "enum",  defaultValue: 5, options: TEMP_REPORTING_DELTA, required: true, title: "Reduce frequent hub 'current temperature' events by <b>only</b> posting every ± delta N° units."
+    input name: "defaultCounterTimerDuration", type: "enum",  defaultValue: '1h', options: SPA_COUNTDOWNTIMERLIST, required: true, title: "Default countdown timer duration when Towel Warmer is switched on"
 
     //Logging Options
     input name: "logLevel", type: "enum", title: fmtTitle("Logging Level"),
@@ -86,12 +87,13 @@ void installed() {
     logInfo "Setting Inital logging level to 'Debug' for 30 minutes"
     state.units = location.temperatureScale
     device.updateSetting('tempReportingInterval', [type: "enum", value: 5])
-    updated()
+    device.updateSetting('defaultCounterTimerDuration', [type: "enum", value: '1h'])
 }
 
 void updated() {
 	logInfo "Preferences Updated..."
-	if ([ipaddress,devId,localKey].contains(null) || [ipaddress,devId,localKey].contains("")) {
+
+    if ([ipaddress,devId,localKey].contains(null) || [ipaddress,devId,localKey].contains("")) {
 		log.error "One or more of the device preference required inputs, (eg. ipaddress, devId or localKey) are blank/empty, exiting..."
 		return
 	}
@@ -123,14 +125,13 @@ void refresh() {
 
 void on() {
 	logTrace ("on()")
-//    sendEvent(name: 'switch', value : 'on')
 	state.statePayload[1] = true
 	runInMillis(250, 'sendSetMessage')
+    setCountdownTimer(defaultCounterTimerDuration)
 }
 
 void off() {
 	logTrace ("off()")
-//    sendEvent(name: 'switch', value : 'off')
 	state.statePayload[1] = false
 	runInMillis(250, 'sendSetMessage')
 }
@@ -246,7 +247,7 @@ def parse(String message) {
                 	if (tempDelta == 0) {
                     	makeEvent('temperature', v, state.units)
                     } else {
-                        logInfo "Current towel warmer temperature is ${v}°.  This temperature value will not be posted to the hub device because it is ${tempDelta}° of ${v}° (Filter = ± ${tempReportingInterval}°)"
+                        logInfo "Current towel warmer temperature is ${v}°.  This temperature value will not be posted to the hub device because it is ${tempDelta}° of ${v}° (Event Filter = ${TEMP_REPORTING_DELTA[tempReportingInterval.toInteger()]})"
                     }
                 	break
 
