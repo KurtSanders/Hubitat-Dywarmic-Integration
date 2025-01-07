@@ -26,9 +26,9 @@ definition(name: PARENT_DEVICE_NAME,
        	importUrl: "",
        	singleThreaded: true) {
     capability "Actuator"
-    capability 'Refresh'
+    capability "Refresh"
     capability "Switch"
-    capability 'TemperatureMeasurement'
+    capability "TemperatureMeasurement"
 
     attribute "countdown_left", "number"
     attribute "light", "string"
@@ -85,7 +85,7 @@ preferences {
 void installed() {
     setLogLevel("Debug", "30 Minutes")
     logInfo "Setting Inital logging level to 'Debug' for 30 minutes"
-    state.units = location.temperatureScale
+    state.units = "°${location.temperatureScale}"
     device.updateSetting('tempReportingInterval', [type: "enum", value: 5])
     device.updateSetting('defaultCounterTimerDuration', [type: "enum", value: '1h'])
 }
@@ -243,11 +243,13 @@ def parse(String message) {
                     break
                 case "temp_current_f":
                 // Send temperature value events only when temp_current_f is greater/less than tempReportingInterval
-                	def tempDelta = (v.toInteger() % tempReportingInterval.toInteger())
-                	if (tempDelta == 0) {
-                    	makeEvent('temperature', v, state.units)
+                	int currentTemperature = device.currentValue('temperature')
+		            int highTempRange = currentTemperature + tempReportingInterval.toInteger()
+		            int lowTempRange  = currentTemperature - tempReportingInterval.toInteger()
+                	if (v.toInteger() < highTempRange && v.toInteger() > lowTempRange) {
+                        logInfo "A new device temperature of ${v}° will be ignored as it is not outside the ${TEMP_REPORTING_DELTA[tempReportingInterval.toInteger()]} range preference of the last posted temperature of ${currentTemperature}${state.units}: ${lowTempRange}° < ${v}° > ${highTempRange}°."
                     } else {
-                        logInfo "Current towel warmer temperature is ${v}°.  This temperature value will not be posted to the hub device because it is ${tempDelta}° of ${v}° (Event Filter = ${TEMP_REPORTING_DELTA[tempReportingInterval.toInteger()]})"
+                    	makeEvent('temperature', v, state.units)
                     }
                 	break
 
@@ -330,7 +332,7 @@ def socketStatus(String socketMessage) {
 			state.HaveSession = get_session(settings.tuyaProtVersion)
 
 			if (state.HaveSession == false) {
-				sendEvent(name: "presence", value: "not present")
+				makeEvent("presence", "not present")
 			}
 		}
 	}
@@ -378,7 +380,7 @@ def socket_close(boolean willTryToReconnect=false) {
 	unschedule(sendTimeout)
 
 	if (willTryToReconnect == false) {
-		sendEvent(name: "presence", value: "not present")
+		makeEvent("presence", "not present")
 	}
 
 	state.session_step = "step1"
@@ -762,7 +764,7 @@ Map decodeIncomingFrame(byte[] incomingData, Integer sofIndex=0, byte[] testKey=
 			state.session_step = "final"
 			state.HaveSession = true
 
-			sendEvent(name: "presence", value: "present")
+			makeEvent("presence", "present")
 
 			// Time to send actual message
 			runInMillis(100, sendAll)
@@ -1053,7 +1055,7 @@ def get_session(tuyaVersion) {
 		boolean socket_connect_ret = socket_connect()
 
 		if (socket_connect_ret == true) {
-			sendEvent(name: "presence", value: "present")
+			makeEvent("presence", "present")
 		}
 
 		return socket_connect_ret
