@@ -53,7 +53,7 @@ definition(name: PARENT_DEVICE_NAME,
 @Field static final String AUTHOR_NAME             = "Kurt Sanders"
 @Field static final String NAMESPACE               = "kurtsanders"
 @Field static final String VERSION 				   = "0.0.1"
-@Field static final String COMM_LINK               = "https://community.hubitat.com/"
+@Field static final String COMM_LINK               = "https://community.hubitat.com/t/release-dywarmic-smart-towel-warmer-local-control/148235"
 @Field static final String GITHUB_LINK             = "https://github.com/KurtSanders/Hubitat-Dywarmic-Integration/"
 @Field static final Map SPA_COUNTDOWNTIMERLIST     = ["1h":'20',"2h":'40',"3h":'60',"4h":'80',"5h":'100',"6h":'120',"cancel":"cancel"]
 @Field static final List ONOFF                     = ["on", "off"]
