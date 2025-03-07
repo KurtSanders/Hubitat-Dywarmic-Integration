@@ -429,7 +429,7 @@ def sendTimeout() {
 		state.retry = state.retry - 1
 		sendAll()
 	} else {
-		logError "No answer from device after 5 retries"
+		logErr "No answer from device after 5 retries"
 		socket_close()
 	}
 }
