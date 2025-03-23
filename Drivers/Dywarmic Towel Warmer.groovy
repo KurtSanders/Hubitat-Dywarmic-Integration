@@ -30,12 +30,13 @@ definition(name: PARENT_DEVICE_NAME,
     capability "Switch"
     capability "TemperatureMeasurement"
 
-    attribute "countdown_left", "number"
+    attribute "countdownLeft", "number"
     attribute "light", "string"
-    attribute "temp_unit_convert", "string"
+    attribute "tempUnitConvert", "string"
     attribute "error", "string"
     attribute "state", "string"
     attribute "polling", "boolean"
+    attribute "lastStatus", "string"
 
         command "Disconnect"
         command "setCountdownTimer", [[name: "Count Down Timer Units (mins)*", type:"ENUM", description:"Sets the Count Down Timer [mins]", constraints:SPA_COUNTDOWNTIMERLIST]]
@@ -52,7 +53,7 @@ definition(name: PARENT_DEVICE_NAME,
 @Field static final String PARENT_DEVICE_NAME      = "Dywarmic Towel Warmer"
 @Field static final String AUTHOR_NAME             = "Kurt Sanders"
 @Field static final String NAMESPACE               = "kurtsanders"
-@Field static final String VERSION 				   = "0.0.1"
+@Field static final String VERSION 				   = "0.0.2"
 @Field static final String COMM_LINK               = "https://community.hubitat.com/t/release-dywarmic-smart-towel-warmer-local-control/148235"
 @Field static final String GITHUB_LINK             = "https://github.com/KurtSanders/Hubitat-Dywarmic-Integration/"
 @Field static final Map SPA_COUNTDOWNTIMERLIST     = ["1h":'20',"2h":'40',"3h":'60',"4h":'80',"5h":'100',"6h":'120',"cancel":"cancel"]
@@ -114,7 +115,7 @@ void updated() {
             logDebug "Setting schedule to Refresh every ${minutes} minutes"
             schedule("0 */${minutes} * ? * *", refresh)
         }
-    }
+    } 
     refresh()
 }
 
@@ -140,7 +141,7 @@ void off() {
 void setFeature(feature=null,value=null) {
     if (!feature || !value) {
         log.error "setFeature() requires a valid feature code ${FEATUES.values()} and value ${ONOFF.join(', ')}"
-        return
+        return   
     }
     feature = feature.toLowerCase()
     value = value.toLowerCase()
@@ -172,7 +173,7 @@ void setCountdownTimer(String value) {
         logDebug "==> sendSetMessage() → state.statePayload[12] = ${key}"
         state.statePayload[12] = key
         runInMillis(250, 'sendSetMessage')
-    } else log.error "CountDownTimer argument value '${value}' is invalid.  The value must contain one of these values: ${SPA_COUNTDOWNTIMERLIST.values()}"
+    } else log.error "CountDownTimer argument value '${value}' is invalid.  The value must contain one of these values: ${SPA_COUNTDOWNTIMERLIST.values()}" 
 }
 
 def SendCustomDataToDevice(endpoint, data) {
@@ -210,16 +211,15 @@ def sendSetMessage() {
 
 def parse(String message) {
     logTrace ("parse()")
-
     List results = _parseTuya(message)
     if (!results) return
     logTrace "parse(): results= ${results}"
     String code
-
+    makeEvent('lastStatus',nowFormatted('MMM-dd hh:mm:ss a'))    
     results.each {status_object ->
-        status_object.dps.each { k, v ->
+        status_object.dps.each { k, v -> 
             code = DPSMAP[k]['code']
-            logDebug "DPS Code: ${code} => ${v}"
+            logDebug "DPS Code: ${code} => ${v}" 
             // Map Tuya variables to Hubitat Thermostat attributes
             switch (code) {
                 case "switch":
@@ -231,11 +231,11 @@ def parse(String message) {
                     if (device.currentValue('switch')=='on') {
                             v= "°${v.toUpperCase()}"
                             state.units = "°${v.toUpperCase()}"
-                            makeEvent(code,v.toUpperCase())
+                            makeEvent('tempUnitConvert',v.toUpperCase())
                     }
                 	break
                 case 'countdown_left':
-                	makeEvent(code,formatSeconds(v.toInteger()))
+                	makeEvent('countdownLeft',formatSeconds(v.toInteger()))
                 	break
                 case 'state':
                 	makeEvent(code,v)
@@ -247,12 +247,12 @@ def parse(String message) {
 		            int highTempRange = currentTemperature + tempReportingInterval.toInteger()
 		            int lowTempRange  = currentTemperature - tempReportingInterval.toInteger()
                 	if (v.toInteger() < highTempRange && v.toInteger() > lowTempRange) {
-                        logInfo "A new device temperature of ${v}° will be ignored as it is not outside the ${TEMP_REPORTING_DELTA[tempReportingInterval.toInteger()]} range preference of the last posted temperature of ${currentTemperature}${state.units}: ${lowTempRange}° < ${v}° > ${highTempRange}°."
+                        logInfo "A new device temperature of ${v}° will be ignored as it is not outside the ${TEMP_REPORTING_DELTA[tempReportingInterval.toInteger()]} range preference of the last posted temperature of ${currentTemperature}${state.units}: ${lowTempRange}° < ${v}° > ${highTempRange}°."     
                     } else {
                     	makeEvent('temperature', v, state.units)
                     }
                 	break
-
+                
 				// Ignored events
                 default:
                     logTrace  getFormat('text-blue',">> Ignored event: ${code} => ${v}")
@@ -264,10 +264,10 @@ def parse(String message) {
 
 void makeEvent(theName, theValue, theUnit='', theDescription='') {
     def dataMap = [name: theName, value: theValue]
-    if (theUnits) dataMap.add(units: theUnits)
-    if (theDescription) dataMap.add(description: theDescription)
+    if (theUnits) dataMap.add(units: theUnits) 
+    if (theDescription) dataMap.add(description: theDescription) 
 	sendEvent(dataMap)
-	logDebug getFormat('text-red',"** <b>sendEvent</b> ${theName} = ${theValue}${theUnit} ${theDescription}")
+	logDebug getFormat('text-red',"** <b>sendEvent</b> ${theName} = ${theValue}${theUnit} ${theDescription}")    
 }
 
 def help() {
@@ -281,7 +281,7 @@ String fmtHelpInfo(String str) {
     String prefLink = "<a href='${COMM_LINK}' target='_blank'>${str}<br><div style='font-size: 70%;'>${info}</div></a>"
     String topStyle = "style='font-size: 18px; padding: 1px 12px; border: 2px solid Crimson; border-radius: 6px;'" //SlateGray
     String topLink = "<a ${topStyle} href='${COMM_LINK}' target='_blank'>${str}<br><div style='font-size: 14px;'>${info}</div></a>"
-    if (device) {
+    if (device) {   
         return "<div style='font-size: 160%; font-style: bold; padding: 2px 0px; text-align: center;'>${prefLink}</div>" +
             "<div style='text-align: center; position: absolute; top: 46px; right: 60px; padding: 0px;'><ul class='nav'><li>${topLink}</ul></li></div>"
     } else {
@@ -1457,3 +1457,28 @@ def CRC32b(bytes, length) {
     ]
 ]
 
+//Logging Functions
+def logMessage(String msg) {
+    // app
+    if (app) {
+        return "<span style='color: blue'>${app.name}</span>: ${msg}"
+    }
+    // device
+    return "<span style='color: orange'>${device.name}</span>: ${msg}"
+}
+
+void logErr(String msg) {
+    if (logLevelInfo.level>=1) log.error "${logMessage(msg)}"
+}
+void logWarn(String msg) {
+    if (logLevelInfo.level>=2) log.warn "${logMessage(msg)}"
+}
+void logInfo(String msg) {
+    if (logLevelInfo.level>=3) log.info "${logMessage(msg)}"
+}
+void logDebug(String msg) {
+        if (logLevelInfo.level>=4) log.debug "${logMessage(msg)}"
+}
+void logTrace(String msg) {
+        if (logLevelInfo.level>=5) log.trace "${logMessage(msg)}"
+}

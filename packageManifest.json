@@ -1,14 +1,14 @@
 {
     "packageName": "Hubitat Dywarmic Towel Warmer Integration",
     "author": "Kurt Sanders",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "minimumHEVersion": "2.4.0.143",
     "payPalUrl": "https://www.paypal.com/donate/?hosted_button_id=E4WXT86RTPXDC",
-    "dateReleased": "2025-01-06",
+    "dateReleased": "2025-03-23",
     "gitHubUrl": "https://github.com/KurtSanders/Hubitat-Dywarmic-Integration/tree/main?tab=readme-ov-file#hubitat-dywarmic-integration",
     "documentationLink": "https://github.com/KurtSanders/Hubitat-Dywarmic-Integration/tree/main?tab=readme-ov-file#hubitat-dywarmic-integration",
     "licenseFile": "https://raw.githubusercontent.com/KurtSanders/Hubitat-Dywarmic-Integration/refs/heads/main/LICENSE",
-    "releaseNotes": "• Integrates a Dywarmic Towel Warmer device to Hubitat.\n\n• This integration utilizes the tuya API to access a Dywarmic towel warmer on the local network, i.e. not via the tuya cloud servers, to control and read status from devices.\n\n• This driver supports both 3.1-3.4 versions of the protocol.\n\n• This device driver requires one to create a Tuya Developer account and obtain device authenticaion creditials.\n\n• Instructions are available on Hubitat Community.",
+    "releaseNotes": "• Integrates a Dywarmic Towel Warmer device to Hubitat.\n\n• This integration utilizes the tuya API to access a Dywarmic towel warmer on the local network, i.e. not via the tuya cloud servers, to control and read status from devices.\n\n• This driver supports both 3.1-3.4 versions of the protocol.\n\n• This device driver requires one to create a Tuya Developer account and obtain device authenticaion creditials.\n\n• Instructions are available on Hubitat Community.\nDriver updated to include lastStatus attribute and new formated attributes.",
     "bundles": [
         {
             "id": "b438d8c9-c3bb-45b6-9dcd-a5f0fb931617",
@@ -25,6 +25,7 @@
             "name": "Dywarmic Towel Warmer Integration",
             "namespace": "kurtsanders",
             "location": "https://raw.githubusercontent.com/KurtSanders/Hubitat-Dywarmic-Integration/refs/heads/main/Apps/Dywarmic%20Towel%20Warmer%20Integration.groovy",
+            "version": "0.0.2",
             "required": true,
             "primary": true,
             "oauth": false
@@ -35,6 +36,7 @@
             "id": "8dcc3473-367c-4eee-a89e-47d22af054c5",
             "name": "Hubitat Dywarmic Integration",
             "namespace": "kurtsanders",
+            "version": "0.0.2",
             "location": "https://raw.githubusercontent.com/KurtSanders/Hubitat-Dywarmic-Integration/refs/heads/main/Drivers/Dywarmic%20Towel%20Warmer.groovy",
             "required": true,
             "primary": true
